@@ -7,7 +7,7 @@ import './index.css';
 // ── Cache invalidation ────────────────────────────────────────────────────────
 // Bump APP_VERSION whenever the data schema or provider structure changes.
 // On mismatch the processed Excel cache is wiped so stale data never surfaces.
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 const storedVersion = localStorage.getItem('app_version');
 if (storedVersion !== APP_VERSION) {
   // Clear processed Excel data (structure may have changed) but keep user
