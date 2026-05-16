@@ -13,9 +13,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { fetchRawData, fetchSheets, widgetApi } from '../services/widgetApi';
-import { buildColumnMeta, buildChartData } from '../utils/widgetAggregation';
+import { buildColumnMeta, buildChartData, applyFilters } from '../utils/widgetAggregation';
 import LivePreview from '../components/LivePreview';
 import DataGrid from '../components/DataGrid';
+import TableColumnPicker from '../components/TableColumnPicker';
 import SectionHeader from '../components/SectionHeader';
 import {
   BarChart2, TrendingUp, PieChart, Activity, Table2, SquareAsterisk,
@@ -58,6 +59,7 @@ const DEFAULT_CONFIG = {
   customFormula: '',
   color: '#3F64F7',
   filters: {},
+  tableColumns: [],
 };
 
 // ── Small shared form row ──────────────────────────────────────────────────────
@@ -143,6 +145,13 @@ export default function WidgetBuilderPage() {
   const columns      = useMemo(() => Object.keys(columnMeta), [columnMeta]);
   const numericCols  = useMemo(() => columns.filter(c => columnMeta[c]?.type === 'number'), [columns, columnMeta]);
   const chartData    = useMemo(() => buildChartData(rawData, config), [rawData, config]);
+  const filteredRows = useMemo(() => applyFilters(rawData, config.filters || {}), [rawData, config.filters]);
+
+  // Effective column list for the table picker: user-ordered OR default (all columns)
+  const effectiveTableColumns = useMemo(() => {
+    if (config.tableColumns && config.tableColumns.length > 0) return config.tableColumns;
+    return columns.map(key => ({ key, visible: true }));
+  }, [config.tableColumns, columns]);
 
   // Save personal
   const handleSave = async () => {
@@ -218,7 +227,7 @@ export default function WidgetBuilderPage() {
           </Row>
 
           <Row label="Data Source">
-            <select value={config.dataSource} onChange={e => set({ dataSource: e.target.value, sheet: '', xField: '', yField: '', filters: {} })}
+            <select value={config.dataSource} onChange={e => set({ dataSource: e.target.value, sheet: '', xField: '', yField: '', filters: {}, tableColumns: [] })}
               className={inputClass}>
               {DATA_SOURCES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
@@ -227,7 +236,7 @@ export default function WidgetBuilderPage() {
           {/* Sheet selector — only for delivery (Excel has multiple sheets) */}
           {config.dataSource === 'delivery' && availableSheets.length > 0 && (
             <Row label="Sheet">
-              <select value={config.sheet} onChange={e => set({ sheet: e.target.value, xField: '', yField: '' })}
+              <select value={config.sheet} onChange={e => set({ sheet: e.target.value, xField: '', yField: '', tableColumns: [] })}
                 className={inputClass}>
                 <option value="">— auto (FLOW priority) —</option>
                 {availableSheets.map(s => <option key={s} value={s}>{s}</option>)}
@@ -293,6 +302,16 @@ export default function WidgetBuilderPage() {
             </Row>
           )}
 
+          {/* Table column selector — only for table chart type */}
+          {config.chartType === 'table' && columns.length > 0 && (
+            <Row label="Table Columns">
+              <TableColumnPicker
+                columns={effectiveTableColumns}
+                onChange={cols => set({ tableColumns: cols })}
+              />
+            </Row>
+          )}
+
           <Row label="Accent Color">
             <div className="flex items-center gap-2">
               <input type="color" value={config.color} onChange={e => set({ color: e.target.value })}
@@ -335,7 +354,7 @@ export default function WidgetBuilderPage() {
                 Live Preview · {chartData.length} groups from {rawData.length} rows
               </p>
               <div style={{ height: 'calc(100% - 28px)' }}>
-                <LivePreview config={config} chartData={chartData} />
+                <LivePreview config={config} chartData={chartData} rawRows={filteredRows} />
               </div>
             </>
           )}

@@ -28,7 +28,7 @@ function EmptyState({ message }) {
   );
 }
 
-export default function LivePreview({ config, chartData }) {
+export default function LivePreview({ config, chartData, rawRows = [] }) {
   const color  = config.color || '#3F64F7';
   const type   = config.chartType || 'bar';
   const noData = !chartData || chartData.length === 0;
@@ -47,31 +47,48 @@ export default function LivePreview({ config, chartData }) {
     );
   }
 
-  // Raw Table
+  // Raw Table — shows filtered raw rows with user-selected columns
   if (type === 'table') {
-    if (noData) return <EmptyState message="No data — choose X-axis field" />;
+    if (!rawRows || rawRows.length === 0) return <EmptyState message="No data — choose a data source" />;
+
+    const visibleCols = (config.tableColumns || [])
+      .filter(c => c.visible)
+      .map(c => c.key);
+    const cols = visibleCols.length > 0
+      ? visibleCols
+      : Object.keys(rawRows[0] || {}).slice(0, 10);
+
     return (
       <div className="h-full overflow-auto">
-        <table className="w-full text-xs">
-          <thead>
+        <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#0B1748' }}>
             <tr style={{ borderBottom: '1px solid rgba(20,65,245,0.3)' }}>
-              <th className="text-left px-3 py-2 font-semibold" style={{ color: 'rgba(237,240,254,0.5)' }}>{config.xField}</th>
-              <th className="text-right px-3 py-2 font-semibold" style={{ color: 'rgba(237,240,254,0.5)' }}>Value</th>
-              <th className="text-right px-3 py-2 font-semibold" style={{ color: 'rgba(237,240,254,0.5)' }}>Rows</th>
+              {cols.map(col => (
+                <th key={col} className="text-left px-3 py-2 font-semibold whitespace-nowrap"
+                  style={{ color: 'rgba(237,240,254,0.5)' }}>{col}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {chartData.map((row, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid rgba(20,65,245,0.08)' }}
+            {rawRows.slice(0, 500).map((row, i) => (
+              <tr key={i} style={{ borderBottom: '1px solid rgba(20,65,245,0.07)' }}
                 onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(20,65,245,0.08)'}
                 onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}>
-                <td className="px-3 py-1.5 text-sigma-ice">{row.x}</td>
-                <td className="px-3 py-1.5 text-right font-mono" style={{ color }}>{row.y.toLocaleString()}</td>
-                <td className="px-3 py-1.5 text-right" style={{ color: 'rgba(237,240,254,0.4)' }}>{row.count}</td>
+                {cols.map(col => (
+                  <td key={col} className="px-3 py-1.5 whitespace-nowrap"
+                    style={{ color: 'rgba(237,240,254,0.85)' }}>
+                    {String(row[col] ?? '')}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
+        {rawRows.length > 500 && (
+          <p className="text-center text-xs py-2" style={{ color: 'rgba(237,240,254,0.3)' }}>
+            Showing first 500 of {rawRows.length} rows
+          </p>
+        )}
       </div>
     );
   }
