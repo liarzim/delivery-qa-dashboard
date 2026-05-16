@@ -43,16 +43,32 @@ function requireUser(req, res, next) {
   next();
 }
 
+// Return sheet names for a source (delivery only — CSVs have no sheets)
+router.get('/sheets/:source', requireUser, (req, res) => {
+  const { source } = req.params;
+  if (source !== 'delivery') return res.json([]);
+  const s = getSettings();
+  try {
+    const wb = XLSX.readFile(path.join(s.excel_path, s.delivery_file));
+    res.json(wb.SheetNames);
+  } catch {
+    res.json([]);
+  }
+});
+
 router.get('/:source', requireUser, (req, res) => {
   const { source } = req.params;
+  const { sheet }  = req.query;   // optional specific sheet name
   const s = getSettings();
 
   let rows = [];
   try {
     if (source === 'delivery') {
       const fp = path.join(s.excel_path, s.delivery_file);
-      // Prefer FLOW sheet for richer data, fall back to Commitment Summary
-      rows = readSheet(fp, 'מדדי FLOW', 'FLOW', 'סיכום התחייבות', 'Commitment Summary');
+      // If caller specified a sheet, use it; otherwise fall back to FLOW priority
+      rows = sheet
+        ? readSheet(fp, sheet)
+        : readSheet(fp, 'מדדי FLOW', 'FLOW', 'סיכום התחייבות', 'Commitment Summary');
     } else if (source === 'qa_bugs') {
       rows = readSheet(path.join(s.excel_path, s.qa_bug_file));
     } else if (source === 'qa_escaping') {
