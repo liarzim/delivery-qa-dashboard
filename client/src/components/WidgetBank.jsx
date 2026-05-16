@@ -52,7 +52,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onToggle 
   return (
     <aside
       className={`shrink-0 transition-all duration-200 overflow-hidden ${isOpen ? 'w-56' : 'w-0'}`}
-      style={{ borderInlineEnd: '1px solid rgba(20,65,245,0.2)', backgroundColor: '#0F257A' }}
+      style={{ borderInlineEnd: '1px solid var(--p-card-border)', backgroundColor: 'var(--p-sidebar-bg)' }}
     >
       <div className="w-56 h-full flex flex-col">
         <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(20,65,245,0.2)' }}>

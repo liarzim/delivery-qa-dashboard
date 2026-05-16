@@ -214,9 +214,11 @@
 .theme-light aside { color: var(--p-text); }
 .theme-light aside a,
 .theme-light aside button { color: var(--p-text-muted) !important; }
-.theme-light aside a.text-sigma-accent,
-.theme-light aside a[style*="var(--p-accent)"],
-.theme-light aside a[class*="text-sigma-accent"] { color: var(--p-accent) !important; }
+/* Active nav link — override static sigma-accent Tailwind class with CSS-var accent */
+.theme-light aside a[class*="text-sigma-accent"],
+.theme-light aside a.text-sigma-accent { color: var(--p-accent) !important; }
+/* Inactive hover text */
+.theme-light aside a:hover { color: var(--p-text) !important; }
 
 /* Tailwind compiled sigma-ice classes */
 .theme-light .text-sigma-ice { color: var(--p-text) !important; }
@@ -298,10 +300,27 @@
   color: var(--p-text);
 }
 
-/* Ensure modal / popover panel text inherits dark text */
-.theme-light [style*="backgroundColor: '#0B1748'"],
+/* Remap hardcoded dark-navy card backgrounds */
+.theme-light [style*="background-color: rgb(15, 37, 122)"],
+.theme-light [style*="backgroundColor: '#0F257A'"],
 .theme-light [style*="background-color: rgb(11, 23, 72)"] {
-  color: var(--p-text);
+  background-color: var(--p-card-bg) !important;
+  color: var(--p-text) !important;
+}
+
+/* Remap dark-blue inline borders to slate-200 */
+.theme-light [style*="border: 1px solid rgba(20, 65, 245"],
+.theme-light [style*="border: 1px solid rgba(20,65,245"],
+.theme-light [style*="borderBottom: '1px solid rgba(20,65,245"],
+.theme-light [style*="border-bottom: 1px solid rgba(20, 65, 245"] {
+  border-color: var(--p-card-border) !important;
+}
+
+/* SystemDocsPage code blocks and section panels */
+.theme-light [style*="background-color: rgba(6, 21, 78"],
+.theme-light [style*="background-color: rgba(4, 13, 54"] {
+  background-color: #F1F5F9 !important; /* slate-100 */
+  color: var(--p-text) !important;
 }
 
 /* ── Base ──────────────────────────────────────────────────────────────────── */
@@ -386,12 +405,12 @@
     border-radius: 8px;
     padding: 8px 12px;
     font-size: 0.875rem;
-    color: #EDF0FE;
+    color: var(--p-text, #EDF0FE);
     font-family: 'Assistant', sans-serif;
     transition: border-color 0.15s, box-shadow 0.15s;
     outline: none;
   }
-  .sigma-input::placeholder { color: rgba(237,240,254,0.3); }
+  .sigma-input::placeholder { color: var(--p-text-faint, rgba(237,240,254,0.3)); }
   .sigma-input:focus {
     border-color: var(--p-accent);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--p-accent) 20%, transparent);

@@ -5,14 +5,14 @@ const ThemeContext = createContext(null);
 
 // ── Preset palettes ──────────────────────────────────────────────────────────
 export const PALETTES = [
-  // Enterprise is first and is the default
+  // Enterprise Light is first and is the default
+  { id: 'light',      labelKey: 'palette_light',      preview: ['#4338CA', '#6366F1', '#F8FAFC'], isLight: true },
   { id: 'enterprise', labelKey: 'palette_enterprise', preview: ['#1D6AB5', '#0E8C95', '#081729'] },
   { id: 'blue',       labelKey: 'palette_blue',       preview: ['#1441F5', '#27DBE4', '#112277'] },
   { id: 'purple',     labelKey: 'palette_purple',     preview: ['#7C3AED', '#C084FC', '#1A0B4E'] },
   { id: 'teal',       labelKey: 'palette_teal',       preview: ['#0D9488', '#2DD4BF', '#0B2E38'] },
   { id: 'slate',      labelKey: 'palette_slate',      preview: ['#3B82F6', '#93C5FD', '#0F1629'] },
   { id: 'green',      labelKey: 'palette_green',      preview: ['#059669', '#34D399', '#0C2E1A'] },
-  { id: 'light',      labelKey: 'palette_light',      preview: ['#1D6AB5', '#0E8C95', '#EEF2F7'], isLight: true },
   // "custom" is a virtual entry — shown in UI as a color-picker card
   { id: 'custom',     labelKey: 'palette_custom',     preview: [] },
 ];
@@ -112,12 +112,12 @@ function customKey(username) {
 // ── Provider ──────────────────────────────────────────────────────────────────
 export function ThemeProvider({ children }) {
   const { user } = useAuth();
-  const [palette, setPaletteState] = useState('enterprise');
+  const [palette, setPaletteState] = useState('light');
   const [customColors, setCustomColorsState] = useState(CUSTOM_COLOR_DEFAULTS);
 
   // ── Load saved preferences when user changes ───────────────────────────────
   useEffect(() => {
-    const saved = localStorage.getItem(paletteKey(user?.username)) || 'enterprise';
+    const saved = localStorage.getItem(paletteKey(user?.username)) || 'light';
     setPaletteState(saved);
 
     const savedCustom = localStorage.getItem(customKey(user?.username));

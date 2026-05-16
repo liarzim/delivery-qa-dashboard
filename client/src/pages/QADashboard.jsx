@@ -201,7 +201,7 @@ export default function QADashboard() {
                       <tr>
                         <td colSpan={10} style={{ padding: 0 }}>
                           <div className="px-6 py-4"
-                            style={{ backgroundColor: 'rgba(6,21,78,0.4)', borderBottom: '1px solid rgba(20,65,245,0.2)' }}>
+                            style={{ backgroundColor: 'var(--p-card-bg)', borderBottom: '1px solid var(--p-card-border)' }}>
                             <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: '#3F64F7' }}>
                               {p.pi} — Squad Breakdown
                             </p>
