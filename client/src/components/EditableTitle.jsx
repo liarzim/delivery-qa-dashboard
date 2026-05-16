@@ -43,7 +43,7 @@ function FloatingToolbar({ anchorRef, size, bold, italic, onChange }) {
     const top = r.top + window.scrollY - 48;
     const left = Math.max(8, r.left + window.scrollX);
     setStyle({ top, left });
-  });
+  }, [anchorRef]);
 
   return createPortal(
     <div
