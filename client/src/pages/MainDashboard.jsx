@@ -56,7 +56,7 @@ function OverviewLight({ label, formula, value, unit, light, yellowThreshold, re
   return (
     <div
       className={`rounded-xl border ${c.border} flex flex-col items-center gap-3 py-6 px-4`}
-      style={{ backgroundColor: 'rgba(6,21,78,0.45)', backdropFilter: 'blur(6px)' }}>
+      style={{ backgroundColor: 'var(--p-card-bg, rgba(6,21,78,0.45))', backdropFilter: 'blur(6px)' }}>
 
       {/* Label */}
       <p className="text-xs font-bold tracking-widest text-center uppercase"

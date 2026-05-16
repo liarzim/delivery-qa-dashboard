@@ -203,12 +203,12 @@ export default function SettingsPage() {
   const totalWeight = parseFloat(form.delivery_weight || 0) + parseFloat(form.quality_weight || 0);
 
   const cardStyle = {
-    backgroundColor: '#0F257A',
-    border: '1px solid rgba(20,65,245,0.25)',
+    backgroundColor: 'var(--p-card-bg)',
+    border: '1px solid var(--p-card-border)',
     borderRadius: '12px',
     padding: '20px',
   };
-  const sectionTitleStyle = { fontSize: '0.8rem', fontWeight: 700, color: '#EDF0FE' };
+  const sectionTitleStyle = { fontSize: '0.8rem', fontWeight: 700, color: 'var(--p-text)' };
 
   return (
     <div className="max-w-3xl space-y-8">

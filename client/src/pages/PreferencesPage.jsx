@@ -5,8 +5,8 @@ import SectionHeader from '../components/SectionHeader';
 import { Check, Globe, Palette, Sliders } from 'lucide-react';
 
 const cardStyle = {
-  backgroundColor: '#0F257A',
-  border: '1px solid rgba(20,65,245,0.25)',
+  backgroundColor: 'var(--p-card-bg)',
+  border: '1px solid var(--p-card-border)',
   borderRadius: '12px',
   padding: '20px',
 };
