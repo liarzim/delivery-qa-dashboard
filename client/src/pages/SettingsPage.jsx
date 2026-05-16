@@ -17,9 +17,8 @@ import IconPicker, { resolveIcon } from '../components/IconPicker';
 import en from '../i18n/en';
 import {
   Save, RefreshCw, Plus, Trash2, AlertCircle, CheckCircle2,
-  Users, Sliders, Map, LayoutDashboard, Wrench, Check, X, Languages, FolderOpen,
+  Users, Sliders, Map, LayoutDashboard, Wrench, Check, X, Languages,
 } from 'lucide-react';
-import { apiFetch } from '../lib/api';
 
 // ── Tiny shared input components ──────────────────────────────────────────────
 function SettingRow({ label, description, children }) {
@@ -86,7 +85,7 @@ export default function SettingsPage() {
   const [piMapText, setPiMapText] = useState('{}');
   const [toast, setToast]       = useState(null);
   const [users, setUsers]       = useState([]);
-  const [newUser, setNewUser]   = useState({ username: '', password: '', role: 'Management' });
+  const [newUser, setNewUser]   = useState({ username: '', role: 'Admin' });
   const [subDashes, setSubDashes] = useState([]);
   const [newSub, setNewSub]     = useState({ name_en: '', name_he: '', parentId: '', icon: 'LayoutDashboard' });
   const [pendingWidgets, setPendingWidgets] = useState([]);
@@ -149,12 +148,12 @@ export default function SettingsPage() {
 
   // ── User management ───────────────────────────────────────────────────────
   const handleAddUser = async () => {
-    if (!newUser.username || !newUser.password) return;
+    if (!newUser.username) return;
     try {
       await addUser(newUser);
       const next = await getAll();
       setUsers(next);
-      setNewUser({ username: '', password: '', role: 'Management' });
+      setNewUser({ username: '', role: 'Admin' });
       showToast(t('success_user_created'));
     } catch (e) {
       showToast(e.message, 'error');
@@ -225,29 +224,9 @@ export default function SettingsPage() {
           {t('settings_data_sources_desc')}
         </p>
         <SettingRow label={t('settings_excel_folder')} description={t('settings_excel_folder_desc')}>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={form.excel_path || ''}
-              onChange={e => setForm(f => ({ ...f, excel_path: e.target.value }))}
-              placeholder="C:\data\excel"
-              className="sigma-input flex-1"
-              style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
-              dir="ltr"
-            />
-            <button
-              onClick={async () => {
-                try {
-                  const { path } = await apiFetch('/api/settings/select-folder');
-                  if (path) setForm(f => ({ ...f, excel_path: path }));
-                } catch { /* cancelled */ }
-              }}
-              className="btn-secondary flex items-center gap-1.5 text-xs px-3"
-              title="Browse for folder on this server"
-            >
-              <FolderOpen size={13} /> Browse
-            </button>
-          </div>
+          <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.4)' }}>
+            Files are loaded via the file-picker dialog on the dashboard. No server paths needed.
+          </p>
         </SettingRow>
         <SettingRow label={t('settings_delivery_file')} description={t('settings_delivery_file_desc')}>
           <TextInput value={form.delivery_file || ''} onChange={v => setForm(f => ({ ...f, delivery_file: v }))} placeholder="delivery.xlsx" />
@@ -568,22 +547,11 @@ export default function SettingsPage() {
         </div>
         <div className="flex items-end gap-2 pb-4 mb-4" style={{ borderBottom: '1px solid rgba(20,65,245,0.2)' }}>
           <div className="flex-1">
-            <label className="text-xs mb-1 block" style={{ color: 'rgba(237,240,254,0.4)' }}>{t('settings_username')}</label>
-            <TextInput value={newUser.username} onChange={v => setNewUser(u => ({ ...u, username: v }))} placeholder="new_user" />
+            <label className="text-xs mb-1 block" style={{ color: 'rgba(237,240,254,0.4)' }}>GitHub Username</label>
+            <TextInput value={newUser.username} onChange={v => setNewUser(u => ({ ...u, username: v }))} placeholder="github-username" />
           </div>
-          <div className="flex-1">
-            <label className="text-xs mb-1 block" style={{ color: 'rgba(237,240,254,0.4)' }}>{t('settings_password')}</label>
-            <TextInput type="password" value={newUser.password} onChange={v => setNewUser(u => ({ ...u, password: v }))} placeholder="••••••••" />
-          </div>
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: 'rgba(237,240,254,0.4)' }}>{t('settings_role')}</label>
-            <select value={newUser.role} onChange={e => setNewUser(u => ({ ...u, role: e.target.value }))} className="sigma-input" style={{ width: 'auto' }}>
-              <option value="Management">Management</option>
-              <option value="Admin">Admin</option>
-            </select>
-          </div>
-          <button onClick={handleAddUser} disabled={!newUser.username || !newUser.password} className="btn-primary flex items-center gap-1.5 py-2">
-            <Plus size={14} /> {t('settings_add_user')}
+          <button onClick={handleAddUser} disabled={!newUser.username} className="btn-primary flex items-center gap-1.5 py-2">
+            <Plus size={14} /> Grant Admin
           </button>
         </div>
         <div className="space-y-1">

@@ -4,16 +4,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
 
-  // ── Dev server — proxy /api/* to Express backend on :3001 ───────────────
+  // ── Dev server (no backend proxy — all data is client-side) ────────────
   server: {
     port: 5173,
     open: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
-    },
   },
 
   // ── Production build: standard static HTML/JS/CSS output ────────────────

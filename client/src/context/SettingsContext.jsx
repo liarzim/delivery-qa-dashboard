@@ -1,10 +1,9 @@
 /**
- * SettingsContext — syncs with server DB via /api/settings.
- * GET is public (no auth needed). PUT requires Admin token.
- * Starts with DEFAULT_SETTINGS and merges server values once loaded.
+ * SettingsContext — 100% localStorage. No server calls.
+ * Reads from 'app_settings' on mount; writes back on every updateSettings call.
  */
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { apiFetch } from '../lib/api';
+import React, { createContext, useContext, useState } from 'react';
+import { store } from '../lib/store';
 
 const SettingsContext = createContext(null);
 
@@ -37,22 +36,17 @@ export const DEFAULT_SETTINGS = {
 };
 
 export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState(() => ({
+    ...DEFAULT_SETTINGS,
+    ...store.get('app_settings', {}),
+  }));
 
-  useEffect(() => {
-    apiFetch('/api/settings')
-      .then(data => setSettings({ ...DEFAULT_SETTINGS, ...data }))
-      .catch(() => {}); // Keep defaults if server unreachable
-  }, []);
-
-  const updateSettings = async (updates) => {
-    // Optimistic update so UI reflects changes instantly
-    setSettings(prev => ({ ...prev, ...updates }));
-    try {
-      await apiFetch('/api/settings', { method: 'PUT', body: JSON.stringify(updates) });
-    } catch (e) {
-      console.error('Settings save failed:', e.message);
-    }
+  const updateSettings = (updates) => {
+    setSettings(prev => {
+      const next = { ...prev, ...updates };
+      store.set('app_settings', next);
+      return next;
+    });
   };
 
   return (

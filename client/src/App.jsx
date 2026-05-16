@@ -10,6 +10,7 @@ import { DataProvider, useData } from './context/DataContext';
 import AppShell from './components/AppShell';
 import FileLoader from './components/FileLoader';
 import LoginPage from './pages/LoginPage';
+import AuthCallback from './pages/AuthCallback';
 import MainDashboard from './pages/MainDashboard';
 import DeliveryDashboard from './pages/DeliveryDashboard';
 import QADashboard from './pages/QADashboard';
@@ -44,7 +45,8 @@ function AppRoutes() {
   const { user } = useAuth();
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/login"         element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/" element={<ProtectedRoute><DataGate><AppShell /></DataGate></ProtectedRoute>}>
         <Route index element={<MainDashboard />} />
         <Route path="delivery"       element={<DeliveryDashboard />} />

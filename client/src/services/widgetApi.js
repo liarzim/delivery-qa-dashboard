@@ -1,63 +1,108 @@
 /**
- * Widget API — calls the Express backend for custom widget CRUD.
- * Auth via X-Username / X-User-Role headers (internal tool, no JWT needed).
+ * widgetApi — localStorage-backed CRUD for custom widgets.
+ * Replaces the server API calls for the static/Netlify deployment.
+ *
+ * Raw Excel rows for the Widget Builder come from rawDataStore (in-memory),
+ * populated by DataContext when files are loaded.
  */
+import { store } from '../lib/store';
+import { rawDataStore } from '../lib/rawDataStore';
+import * as XLSX from 'xlsx';
 
-function headers(user) {
-  return {
-    'Content-Type': 'application/json',
-    'X-Username':  user?.username || 'anonymous',
-    'X-User-Role': user?.role     || 'Management',
-  };
-}
+const WIDGETS_KEY = 'custom_widgets';
 
-async function req(method, url, user, body) {
-  const opts = { method, headers: headers(user) };
-  if (body !== undefined) opts.body = JSON.stringify(body);
-  const res = await fetch(url, opts);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || res.statusText);
-  }
-  return res.json();
-}
-
-// ── Raw data ──────────────────────────────────────────────────────────────────
-const _rawCache = new Map();
-
-export async function fetchSheets(source, user) {
-  try {
-    return await req('GET', `/api/data/raw/sheets/${source}`, user);
-  } catch {
-    return [];
-  }
-}
-
-export async function fetchRawData(source, user, sheet) {
-  const key = sheet ? `${source}::${sheet}` : source;
-  if (_rawCache.has(key)) return _rawCache.get(key);
-  try {
-    const url = sheet
-      ? `/api/data/raw/${source}?sheet=${encodeURIComponent(sheet)}`
-      : `/api/data/raw/${source}`;
-    const rows = await req('GET', url, user);
-    _rawCache.set(key, rows);
-    return rows;
-  } catch {
-    return [];
-  }
-}
-export function clearRawCache() { _rawCache.clear(); }
+function getWidgets() { return store.get(WIDGETS_KEY, []); }
+function saveWidgets(list) { store.set(WIDGETS_KEY, list); }
+function nextId() { return String(Date.now()); }
 
 // ── Widget CRUD ───────────────────────────────────────────────────────────────
 export const widgetApi = {
-  list:    (user)          => req('GET',    '/api/widgets',             user),
-  get:     (id, user)      => req('GET',    `/api/widgets/${id}`,       user),
-  create:  (body, user)    => req('POST',   '/api/widgets',             user, body),
-  update:  (id, body, user)=> req('PUT',    `/api/widgets/${id}`,       user, body),
-  remove:  (id, user)      => req('DELETE', `/api/widgets/${id}`,       user),
-  publish: (id, user)      => req('PUT',    `/api/widgets/${id}/publish`,user, {}),
-  approve: (id, user)      => req('PUT',    `/api/widgets/${id}/approve`,user, {}),
-  reject:  (id, user)      => req('PUT',    `/api/widgets/${id}/reject`, user, {}),
-  pending: (user)          => req('GET',    '/api/widgets/pending',      user),
+  list: (_user) => Promise.resolve(
+    getWidgets().filter(w => w.status === 'approved' || w.status === 'personal'),
+  ),
+
+  get: (id, _user) => {
+    const w = getWidgets().find(w => String(w.id) === String(id));
+    return w ? Promise.resolve(w) : Promise.reject(new Error('Widget not found'));
+  },
+
+  create: (body, _user) => {
+    const w = { id: nextId(), ...body, status: 'personal', createdAt: new Date().toISOString() };
+    saveWidgets([...getWidgets(), w]);
+    return Promise.resolve(w);
+  },
+
+  update: (id, body, _user) => {
+    const list = getWidgets().map(w => String(w.id) === String(id) ? { ...w, ...body } : w);
+    saveWidgets(list);
+    return Promise.resolve(list.find(w => String(w.id) === String(id)));
+  },
+
+  remove: (id, _user) => {
+    saveWidgets(getWidgets().filter(w => String(w.id) !== String(id)));
+    return Promise.resolve();
+  },
+
+  // Publish = mark as "pending" (or auto-approve without a server review flow)
+  publish: (id, _user) => {
+    const list = getWidgets().map(w =>
+      String(w.id) === String(id) ? { ...w, status: 'approved' } : w,
+    );
+    saveWidgets(list);
+    return Promise.resolve({ message: 'Published' });
+  },
+
+  approve: (id, _user) => {
+    const list = getWidgets().map(w =>
+      String(w.id) === String(id) ? { ...w, status: 'approved' } : w,
+    );
+    saveWidgets(list);
+    return Promise.resolve();
+  },
+
+  reject: (id, _user) => {
+    const list = getWidgets().map(w =>
+      String(w.id) === String(id) ? { ...w, status: 'rejected' } : w,
+    );
+    saveWidgets(list);
+    return Promise.resolve();
+  },
+
+  pending: (_user) => Promise.resolve(
+    getWidgets().filter(w => w.status === 'pending'),
+  ),
 };
+
+// ── Raw data for Widget Builder ───────────────────────────────────────────────
+const _rawCache = new Map();
+
+export async function fetchSheets(source, _user) {
+  const data = rawDataStore.get(source === 'delivery' ? 'delivery' : source);
+  if (!data) return [];
+  return data.sheets || [];
+}
+
+export async function fetchRawData(source, _user, sheet) {
+  const key = sheet ? `${source}::${sheet}` : source;
+  if (_rawCache.has(key)) return _rawCache.get(key);
+
+  const storeKey = source === 'qa_bugs' ? 'qa_bugs'
+    : source === 'qa_escaping' ? 'qa_escaping'
+    : 'delivery';
+
+  const data = rawDataStore.get(storeKey);
+  if (!data) return [];
+
+  let rows;
+  if (sheet && data.wb) {
+    const ws = data.wb.Sheets[sheet];
+    rows = ws ? XLSX.utils.sheet_to_json(ws, { defval: '' }) : data.rows;
+  } else {
+    rows = data.rows || [];
+  }
+
+  _rawCache.set(key, rows);
+  return rows;
+}
+
+export function clearRawCache() { _rawCache.clear(); }

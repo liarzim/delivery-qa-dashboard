@@ -1,76 +1,70 @@
 /**
- * DataContext — loads processed data from the Express server.
+ * DataContext — loads data by parsing Excel files in the browser.
  *
  * Flow:
- *  1. On mount: if session paths are saved in localStorage, auto-load from server.
- *  2. If no saved paths: needsFiles = true → FileLoader (path dialog) appears.
- *  3. User enters/confirms paths → loadFromPaths() → data flows to dashboards.
- *  4. "Reload" → clearData() → FileLoader appears again.
+ *  1. needsFiles = true → FileLoader (file-picker dialog) appears.
+ *  2. User selects their three Excel files → loadFromFiles() runs.
+ *  3. browserExcelReader.js processes each file client-side (no server).
+ *  4. Raw rows are stored in rawDataStore for the Widget Builder.
+ *  5. Processed metrics flow to dashboards via delivery / qa state.
  */
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { apiFetch, getToken } from '../lib/api';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { processDelivery, processQA } from '../services/browserExcelReader';
+import { rawDataStore } from '../lib/rawDataStore';
+import * as XLSX from 'xlsx';
 
 const DataContext = createContext(null);
 
-const PATHS_KEY = 'data_paths';
-
-function getSavedPaths() {
-  try { return JSON.parse(localStorage.getItem(PATHS_KEY) || 'null'); } catch { return null; }
-}
-
-// A path is only considered valid if it contains a directory separator —
-// bare filenames like "delivery.xlsx" can't be resolved by the server.
-function isFullPath(p) {
-  return typeof p === 'string' && (p.includes('/') || p.includes('\\'));
-}
-function pathsAreValid(paths) {
-  return paths && isFullPath(paths.deliveryPath) && isFullPath(paths.bugsPath);
-}
-
 export function DataProvider({ children }) {
-  const [delivery, setDelivery] = useState(null);
-  const [qa,       setQA]       = useState(null);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState(null);
+  const [delivery,   setDelivery]   = useState(null);
+  const [qa,         setQA]         = useState(null);
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState(null);
   const [needsFiles, setNeedsFiles] = useState(true);
 
-  // Auto-load saved paths on mount (user already has a session token)
-  useEffect(() => {
-    const saved = getSavedPaths();
-    if (pathsAreValid(saved) && getToken()) {
-      loadFromPaths(saved);
-    } else {
-      // Clear incomplete/bare-filename paths so the dialog shows fresh defaults
-      if (saved && !pathsAreValid(saved)) localStorage.removeItem(PATHS_KEY);
+  const loadFromFiles = useCallback(async ({ deliveryFile, bugsFile, escapingFile, settings = {} }) => {
+    if (!deliveryFile && !bugsFile) {
+      setError('Please select at least the Delivery file.');
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loadFromPaths = useCallback(async (paths = {}) => {
     setLoading(true);
     setError(null);
     try {
-      const dQuery = paths.deliveryPath
-        ? `?deliveryPath=${encodeURIComponent(paths.deliveryPath)}` : '';
-      const qParams = new URLSearchParams();
-      if (paths.bugsPath)     qParams.set('bugsPath',     paths.bugsPath);
-      if (paths.escapingPath) qParams.set('escapingPath', paths.escapingPath);
-      const qQuery = qParams.toString() ? `?${qParams}` : '';
-
       const [dData, qData] = await Promise.all([
-        apiFetch(`/api/data/delivery${dQuery}`),
-        apiFetch(`/api/data/qa${qQuery}`),
+        deliveryFile ? processDelivery(deliveryFile, settings) : null,
+        (bugsFile || escapingFile) ? processQA(bugsFile, escapingFile || bugsFile, settings) : null,
       ]);
 
-      setDelivery(dData);
-      setQA(qData);
-      // Save paths so next session auto-loads
-      if (paths.deliveryPath || paths.bugsPath) {
-        localStorage.setItem(PATHS_KEY, JSON.stringify(paths));
+      // Store raw rows in memory for Widget Builder
+      if (deliveryFile) {
+        const buf = await deliveryFile.arrayBuffer();
+        const wb  = XLSX.read(new Uint8Array(buf), { type: 'array' });
+        rawDataStore.set('delivery', {
+          rows:   XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' }),
+          sheets: wb.SheetNames,
+          wb,
+        });
       }
+      if (bugsFile) {
+        const buf = await bugsFile.arrayBuffer();
+        const wb  = XLSX.read(new Uint8Array(buf), { type: 'array' });
+        rawDataStore.set('qa_bugs', {
+          rows: XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' }),
+        });
+      }
+      if (escapingFile) {
+        const buf = await escapingFile.arrayBuffer();
+        const wb  = XLSX.read(new Uint8Array(buf), { type: 'array' });
+        rawDataStore.set('qa_escaping', {
+          rows: XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' }),
+        });
+      }
+
+      if (dData) setDelivery(dData);
+      if (qData) setQA(qData);
       setNeedsFiles(false);
     } catch (e) {
-      setError(e.message || 'Failed to load data from server.');
+      setError(e.message || 'Failed to parse Excel files.');
     } finally {
       setLoading(false);
     }
@@ -81,24 +75,17 @@ export function DataProvider({ children }) {
     setQA(null);
     setNeedsFiles(true);
     setError(null);
-    localStorage.removeItem(PATHS_KEY);
+    rawDataStore.clear();
   }, []);
 
-  const skipFiles = useCallback(() => {
-    setNeedsFiles(false);
-    setError(null);
-  }, []);
-
-  const openLoader = useCallback(() => {
-    setNeedsFiles(true);
-    setError(null);
-  }, []);
+  const skipFiles  = useCallback(() => { setNeedsFiles(false); setError(null); }, []);
+  const openLoader = useCallback(() => { setNeedsFiles(true);  setError(null); }, []);
 
   return (
     <DataContext.Provider value={{
       delivery, qa, loading, error, needsFiles,
-      loadFromPaths,
-      loadFiles: loadFromPaths, // legacy alias kept for AppShell sidebar "Reload Data"
+      loadFromFiles,
+      loadFiles: openLoader,   // sidebar "Reload Data" triggers the dialog
       clearData, skipFiles, openLoader,
     }}>
       {children}
