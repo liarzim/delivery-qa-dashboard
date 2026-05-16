@@ -12,10 +12,11 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { fetchRawData, widgetApi } from '../services/widgetApi';
-import { buildColumnMeta, buildChartData } from '../utils/widgetAggregation';
+import { fetchRawData, fetchSheets, widgetApi } from '../services/widgetApi';
+import { buildColumnMeta, buildChartData, applyFilters } from '../utils/widgetAggregation';
 import LivePreview from '../components/LivePreview';
 import DataGrid from '../components/DataGrid';
+import TableColumnPicker from '../components/TableColumnPicker';
 import SectionHeader from '../components/SectionHeader';
 import {
   BarChart2, TrendingUp, PieChart, Activity, Table2, SquareAsterisk,
@@ -38,6 +39,7 @@ const FORMULAS = [
   { id: 'average', label: 'Average' },
   { id: 'min',     label: 'Min' },
   { id: 'max',     label: 'Max' },
+  { id: 'custom',  label: 'Custom…' },
 ];
 
 const DATA_SOURCES = [
@@ -50,11 +52,14 @@ const DEFAULT_CONFIG = {
   name: '',
   chartType: 'bar',
   dataSource: 'delivery',
+  sheet: '',
   xField: '',
   yField: '',
   formula: 'count',
+  customFormula: '',
   color: '#3F64F7',
   filters: {},
+  tableColumns: [],
 };
 
 // ── Small shared form row ──────────────────────────────────────────────────────
@@ -88,37 +93,44 @@ export default function WidgetBuilderPage() {
   const { t }    = useLanguage();
   const navigate = useNavigate();
 
-  const [config, setConfig]     = useState(DEFAULT_CONFIG);
-  const [rawData, setRawData]   = useState([]);
-  const [columnMeta, setColMeta] = useState({});
-  const [dataLoading, setDL]    = useState(false);
-  const [saving, setSaving]     = useState(false);
-  const [publishing, setPub]    = useState(false);
-  const [toast, setToast]       = useState(null);
-  const [widgetId, setWidgetId] = useState(id || null);
+  const [config, setConfig]         = useState(DEFAULT_CONFIG);
+  const [rawData, setRawData]       = useState([]);
+  const [columnMeta, setColMeta]    = useState({});
+  const [availableSheets, setSheets] = useState([]);
+  const [dataLoading, setDL]        = useState(false);
+  const [saving, setSaving]         = useState(false);
+  const [publishing, setPub]        = useState(false);
+  const [toast, setToast]           = useState(null);
+  const [widgetId, setWidgetId]     = useState(id || null);
 
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  // Load raw data whenever data source changes
+  // Fetch available sheets when delivery is selected
+  useEffect(() => {
+    if (config.dataSource !== 'delivery') { setSheets([]); return; }
+    fetchSheets('delivery', user).then(setSheets).catch(() => setSheets([]));
+  }, [config.dataSource, user]);
+
+  // Load raw data whenever data source or sheet changes
   useEffect(() => {
     setDL(true);
     setRawData([]);
     setColMeta({});
-    fetchRawData(config.dataSource, user).then(rows => {
+    fetchRawData(config.dataSource, user, config.sheet || undefined).then(rows => {
       setRawData(rows);
       if (rows.length) {
         setColMeta(buildColumnMeta(rows));
-        // Auto-set first xField if none set
-        setConfig(c => ({ ...c,
+        setConfig(c => ({
+          ...c,
           xField: c.xField || Object.keys(rows[0])[0] || '',
           yField: c.yField || '',
         }));
       }
     }).finally(() => setDL(false));
-  }, [config.dataSource, user]);
+  }, [config.dataSource, config.sheet, user]);
 
   // Load existing widget in edit mode
   useEffect(() => {
@@ -133,6 +145,13 @@ export default function WidgetBuilderPage() {
   const columns      = useMemo(() => Object.keys(columnMeta), [columnMeta]);
   const numericCols  = useMemo(() => columns.filter(c => columnMeta[c]?.type === 'number'), [columns, columnMeta]);
   const chartData    = useMemo(() => buildChartData(rawData, config), [rawData, config]);
+  const filteredRows = useMemo(() => applyFilters(rawData, config.filters || {}), [rawData, config.filters]);
+
+  // Effective column list for the table picker: user-ordered OR default (all columns)
+  const effectiveTableColumns = useMemo(() => {
+    if (config.tableColumns && config.tableColumns.length > 0) return config.tableColumns;
+    return columns.map(key => ({ key, visible: true }));
+  }, [config.tableColumns, columns]);
 
   // Save personal
   const handleSave = async () => {
@@ -208,11 +227,22 @@ export default function WidgetBuilderPage() {
           </Row>
 
           <Row label="Data Source">
-            <select value={config.dataSource} onChange={e => set({ dataSource: e.target.value, xField: '', yField: '', filters: {} })}
+            <select value={config.dataSource} onChange={e => set({ dataSource: e.target.value, sheet: '', xField: '', yField: '', filters: {}, tableColumns: [] })}
               className={inputClass}>
               {DATA_SOURCES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
           </Row>
+
+          {/* Sheet selector — only for delivery (Excel has multiple sheets) */}
+          {config.dataSource === 'delivery' && availableSheets.length > 0 && (
+            <Row label="Sheet">
+              <select value={config.sheet} onChange={e => set({ sheet: e.target.value, xField: '', yField: '', tableColumns: [] })}
+                className={inputClass}>
+                <option value="">— auto (FLOW priority) —</option>
+                {availableSheets.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Row>
+          )}
 
           <Row label="Chart Type">
             <div className="grid grid-cols-3 gap-1.5">
@@ -257,6 +287,31 @@ export default function WidgetBuilderPage() {
             </select>
           </Row>
 
+          {config.formula === 'custom' && (
+            <Row label="Expression">
+              <input
+                value={config.customFormula}
+                onChange={e => set({ customFormula: e.target.value })}
+                className={inputClass}
+                placeholder="e.g. SUM(bugs) / COUNT(*) * 100"
+                spellCheck={false}
+              />
+              <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.3)' }}>
+                Tokens: COUNT(*), SUM(col), AVG(col), MIN(col), MAX(col)
+              </p>
+            </Row>
+          )}
+
+          {/* Table column selector — only for table chart type */}
+          {config.chartType === 'table' && columns.length > 0 && (
+            <Row label="Table Columns">
+              <TableColumnPicker
+                columns={effectiveTableColumns}
+                onChange={cols => set({ tableColumns: cols })}
+              />
+            </Row>
+          )}
+
           <Row label="Accent Color">
             <div className="flex items-center gap-2">
               <input type="color" value={config.color} onChange={e => set({ color: e.target.value })}
@@ -299,7 +354,7 @@ export default function WidgetBuilderPage() {
                 Live Preview · {chartData.length} groups from {rawData.length} rows
               </p>
               <div style={{ height: 'calc(100% - 28px)' }}>
-                <LivePreview config={config} chartData={chartData} />
+                <LivePreview config={config} chartData={chartData} rawRows={filteredRows} />
               </div>
             </>
           )}

@@ -25,11 +25,23 @@ async function req(method, url, user, body) {
 // ── Raw data ──────────────────────────────────────────────────────────────────
 const _rawCache = new Map();
 
-export async function fetchRawData(source, user) {
-  if (_rawCache.has(source)) return _rawCache.get(source);
+export async function fetchSheets(source, user) {
   try {
-    const rows = await req('GET', `/api/data/raw/${source}`, user);
-    _rawCache.set(source, rows);
+    return await req('GET', `/api/data/raw/sheets/${source}`, user);
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchRawData(source, user, sheet) {
+  const key = sheet ? `${source}::${sheet}` : source;
+  if (_rawCache.has(key)) return _rawCache.get(key);
+  try {
+    const url = sheet
+      ? `/api/data/raw/${source}?sheet=${encodeURIComponent(sheet)}`
+      : `/api/data/raw/${source}`;
+    const rows = await req('GET', url, user);
+    _rawCache.set(key, rows);
     return rows;
   } catch {
     return [];

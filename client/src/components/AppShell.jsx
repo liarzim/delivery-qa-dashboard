@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
 import { useData } from '../context/DataContext';
+import { useEditMode } from '../context/EditModeContext';
 import { store } from '../lib/store';
 import { resolveIcon } from './IconPicker';
 import AddSubDashModal from './AddSubDashModal';
@@ -19,7 +20,7 @@ import {
   LayoutDashboard, Truck, Bug, Settings, LogOut,
   BarChart3, BookOpen, SlidersHorizontal,
   Globe, Layers, FlaskConical, RefreshCw, Menu, ChevronDown,
-  Wrench, Plus,
+  Wrench, Plus, Pencil,
 } from 'lucide-react';
 
 // ── Nav link class helpers (logical-CSS only) ─────────────────────────────────
@@ -146,6 +147,7 @@ export default function AppShell() {
   const { t, toggleLang, lang }            = useLanguage();
   const { isOpen: bankOpen, toggle: toggleBank } = useWidgetBank();
   const { openLoader }                     = useData();
+  const { editMode, toggleEditMode }       = useEditMode();
   const navigate  = useNavigate();
   const location  = useLocation();
 
@@ -350,6 +352,16 @@ export default function AppShell() {
               collapsed={collapsed}
               active={false}
             />
+
+            {user?.role === 'Admin' && (
+              <SidebarButton
+                onClick={toggleEditMode}
+                icon={Pencil}
+                label={editMode ? 'Exit Edit Mode' : 'Edit Titles'}
+                collapsed={collapsed}
+                active={editMode}
+              />
+            )}
 
             <button
               onClick={handleLogout}

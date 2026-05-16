@@ -85,8 +85,52 @@ export function applyFilters(rows, filters = {}) {
   );
 }
 
+// ── Safe custom formula evaluator ────────────────────────────────────────────
+// Supports: COUNT(*), SUM(field), AVG(field), AVERAGE(field), MIN(field), MAX(field)
+// plus numeric literals and operators + - * / ( )
+export function evaluateCustomFormula(groupRows, expression) {
+  if (!expression?.trim()) return 0;
+  try {
+    let expr = expression
+      // COUNT(*) or COUNT(anything)
+      .replace(/COUNT\s*\([^)]*\)/gi, () => groupRows.length)
+      // SUM(field)
+      .replace(/SUM\s*\(([^)]+)\)/gi, (_, field) => {
+        field = field.trim();
+        const nums = groupRows.map(r => parseFloat(r[field])).filter(v => !isNaN(v));
+        return nums.reduce((a, b) => a + b, 0);
+      })
+      // AVG / AVERAGE(field)
+      .replace(/(?:AVG|AVERAGE)\s*\(([^)]+)\)/gi, (_, field) => {
+        field = field.trim();
+        const nums = groupRows.map(r => parseFloat(r[field])).filter(v => !isNaN(v));
+        return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
+      })
+      // MIN(field)
+      .replace(/MIN\s*\(([^)]+)\)/gi, (_, field) => {
+        field = field.trim();
+        const nums = groupRows.map(r => parseFloat(r[field])).filter(v => !isNaN(v));
+        return nums.length ? Math.min(...nums) : 0;
+      })
+      // MAX(field)
+      .replace(/MAX\s*\(([^)]+)\)/gi, (_, field) => {
+        field = field.trim();
+        const nums = groupRows.map(r => parseFloat(r[field])).filter(v => !isNaN(v));
+        return nums.length ? Math.max(...nums) : 0;
+      });
+
+    // After substitution only digits, operators, dots, spaces, parens are allowed
+    if (!/^[\d\s+\-*/.()]+$/.test(expr)) return 0;
+    // eslint-disable-next-line no-new-func
+    const result = new Function(`return (${expr})`)();
+    return typeof result === 'number' && isFinite(result) ? Math.round(result * 1000) / 1000 : 0;
+  } catch {
+    return 0;
+  }
+}
+
 // ── Aggregate rows by xField, applying formula to yField ─────────────────────
-export function aggregateData(rows, xField, yField, formula = 'count') {
+export function aggregateData(rows, xField, yField, formula = 'count', customFormula = '') {
   if (!rows.length || !xField) return [];
 
   const groups = new Map();
@@ -99,7 +143,9 @@ export function aggregateData(rows, xField, yField, formula = 'count') {
   const result = [];
   for (const [key, groupRows] of groups) {
     let value = 0;
-    if (formula === 'count') {
+    if (formula === 'custom') {
+      value = evaluateCustomFormula(groupRows, customFormula);
+    } else if (formula === 'count') {
       value = groupRows.length;
     } else {
       const nums = groupRows
@@ -124,7 +170,7 @@ export function aggregateData(rows, xField, yField, formula = 'count') {
 export function buildChartData(rows, config) {
   const filtered = applyFilters(rows, config.filters || {});
   if (!config.xField) return [];
-  return aggregateData(filtered, config.xField, config.yField, config.formula);
+  return aggregateData(filtered, config.xField, config.yField, config.formula, config.customFormula || '');
 }
 
 // ── Unique text values for a column (for filter dropdown) ────────────────────

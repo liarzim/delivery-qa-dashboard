@@ -5,6 +5,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { WidgetBankProvider } from './context/WidgetBankContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { EditModeProvider } from './context/EditModeContext';
 import { DataProvider, useData } from './context/DataContext';
 import AppShell from './components/AppShell';
 import FileLoader from './components/FileLoader';
@@ -69,7 +70,9 @@ export default function App() {
           <ThemeProvider>
             <DataProvider>
               <WidgetBankProvider>
-                <AppRoutes />
+                <EditModeProvider>
+                  <AppRoutes />
+                </EditModeProvider>
               </WidgetBankProvider>
             </DataProvider>
           </ThemeProvider>
