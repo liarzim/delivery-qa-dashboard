@@ -296,6 +296,7 @@ export default function DeliveryDashboard() {
       <SubDashboardTabs parentId="delivery" parentPath="/delivery" parentLabel={t('delivery_title')} />
       <SectionHeader
         title={t('delivery_title')}
+        titleKey="delivery.title"
         subtitle={t('delivery_subtitle')}
       />
       <DashboardLayout

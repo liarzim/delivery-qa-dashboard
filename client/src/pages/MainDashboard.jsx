@@ -273,6 +273,7 @@ export default function MainDashboard() {
           <SubDashboardTabs parentId="overview" parentPath="/" parentLabel={t('overview_title')} />
           <SectionHeader
             title={t('overview_title')}
+            titleKey="overview.title"
             subtitle={t('overview_subtitle')}
             action={
               <button onClick={resetLayout} className="btn-secondary text-xs py-1.5">

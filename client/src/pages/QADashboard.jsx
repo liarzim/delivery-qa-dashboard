@@ -253,7 +253,7 @@ export default function QADashboard() {
   return (
     <div className="space-y-6">
       <SubDashboardTabs parentId="qa" parentPath="/qa" parentLabel={t('qa_title')} />
-      <SectionHeader title={t('qa_title')} subtitle={t('qa_subtitle')} />
+      <SectionHeader title={t('qa_title')} titleKey="qa.title" subtitle={t('qa_subtitle')} />
       <DashboardLayout dashboardId="qa" useLayoutHook={layoutHook} widgetMap={widgetMap} />
     </div>
   );
