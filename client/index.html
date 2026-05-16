@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Responsive viewport — essential for mobile browsers -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Standard web-app metadata -->
+    <meta name="description" content="QA & Delivery Management Dashboard — KPI tracking, traffic lights, and commitment analytics." />
+    <meta name="theme-color" content="#1441F5" />
+
+    <!-- Disable browser auto-translation (content is intentionally bilingual) -->
+    <meta name="google" content="notranslate" />
+
+    <!-- Referrer policy — no data leaks to external resources -->
+    <meta name="referrer" content="no-referrer" />
+
+    <!-- Compatibility: tell IE to use its best engine (legacy fallback) -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- Never cache this HTML file — hashed JS/CSS assets inside are safe to cache -->
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <!-- Content-Security hints -->
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <!-- Open Graph (for sharing / embed previews) -->
+    <meta property="og:title" content="QA & Delivery Dashboard" />
+    <meta property="og:description" content="Engineering KPI dashboard — delivery commitment, QA metrics, and team analytics." />
+    <meta property="og:type" content="website" />
+
+    <title>QA & Delivery Dashboard</title>
+
+    <!-- Google Fonts — preconnect for faster loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Favicon (SVG data-URI, works in all modern browsers) -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- React SPA entry point — Vite replaces this with the built bundle -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

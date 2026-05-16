@@ -1,0 +1,466 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Palette CSS variables ─────────────────────────────────────────────────── */
+:root {
+  --p-bg:     #112277;
+  --p-grad:   linear-gradient(150deg, #1A2E8E 0%, #1630A0 25%, #1228A8 55%, #0E1F90 80%, #142280 100%);
+  --p-orb1:   rgba(99,130,255,0.28);
+  --p-orb2:   rgba(39,219,228,0.18);
+  --p-orb3:   rgba(251,121,243,0.14);
+  --p-orb4:   rgba(84,224,117,0.12);
+  --p-accent: #1441F5;
+  --p-accent-h: #3F64F7;
+  --p-accent-shadow: rgba(20,65,245,0.35);
+  --p-accent-shadow-h: rgba(63,100,247,0.5);
+  --p-card-border: rgba(120,150,255,0.22);
+  --p-sidebar-border: rgba(120,150,255,0.18);
+  --p-nav-active: rgba(20,65,245,0.2);
+  --p-nav-hover: rgba(20,65,245,0.1);
+  --p-header-bg: rgba(6,21,78,0.7);
+  --p-input-bg: rgba(10,25,90,0.5);
+  --p-input-border: rgba(99,130,255,0.35);
+  /* Semantic KPI traffic-light colors — overridable by custom palette */
+  --p-success: #54E075;
+  --p-warning: #F9BD33;
+  --p-danger:  #F36059;
+  /* Text color — overridden by light theme */
+  --p-text:           #EDF0FE;
+  --p-text-muted:     rgba(237,240,254,0.5);
+  --p-text-faint:     rgba(237,240,254,0.3);
+  --p-card-bg:        rgba(255,255,255,0.06);
+  --p-sidebar-bg:     rgba(255,255,255,0.055);
+  /* Traffic light housing — deep navy for dark themes */
+  --p-traffic-bg:     rgba(6,21,78,0.7);
+  --p-traffic-border: rgba(20,65,245,0.2);
+}
+
+.theme-purple {
+  --p-bg:     #1A0B4E;
+  --p-grad:   linear-gradient(150deg, #2D1670 0%, #2E1280 25%, #26108A 55%, #1E0B6E 80%, #1A0B60 100%);
+  --p-orb1:   rgba(139,92,246,0.32);
+  --p-orb2:   rgba(167,139,250,0.2);
+  --p-orb3:   rgba(251,121,243,0.15);
+  --p-orb4:   rgba(84,224,117,0.1);
+  --p-accent: #7C3AED;
+  --p-accent-h: #8B5CF6;
+  --p-accent-shadow: rgba(124,58,237,0.4);
+  --p-accent-shadow-h: rgba(139,92,246,0.55);
+  --p-card-border: rgba(139,92,246,0.25);
+  --p-sidebar-border: rgba(139,92,246,0.2);
+  --p-nav-active: rgba(124,58,237,0.2);
+  --p-nav-hover: rgba(124,58,237,0.1);
+  --p-header-bg: rgba(16,5,50,0.7);
+  --p-input-bg: rgba(20,5,60,0.5);
+  --p-input-border: rgba(139,92,246,0.4);
+}
+
+.theme-teal {
+  --p-bg:     #0B2E38;
+  --p-grad:   linear-gradient(150deg, #0D3B48 0%, #0E4050 25%, #0B3845 55%, #093038 80%, #082B34 100%);
+  --p-orb1:   rgba(13,148,136,0.3);
+  --p-orb2:   rgba(45,212,191,0.2);
+  --p-orb3:   rgba(251,121,243,0.1);
+  --p-orb4:   rgba(84,224,117,0.12);
+  --p-accent: #0D9488;
+  --p-accent-h: #14B8A6;
+  --p-accent-shadow: rgba(13,148,136,0.4);
+  --p-accent-shadow-h: rgba(20,184,166,0.55);
+  --p-card-border: rgba(45,212,191,0.2);
+  --p-sidebar-border: rgba(45,212,191,0.15);
+  --p-nav-active: rgba(13,148,136,0.2);
+  --p-nav-hover: rgba(13,148,136,0.1);
+  --p-header-bg: rgba(5,20,26,0.7);
+  --p-input-bg: rgba(5,20,30,0.5);
+  --p-input-border: rgba(45,212,191,0.35);
+}
+
+.theme-slate {
+  --p-bg:     #0F1629;
+  --p-grad:   linear-gradient(150deg, #141C35 0%, #161E3A 25%, #131B38 55%, #101830 80%, #0F1628 100%);
+  --p-orb1:   rgba(59,130,246,0.25);
+  --p-orb2:   rgba(99,102,241,0.18);
+  --p-orb3:   rgba(147,197,253,0.1);
+  --p-orb4:   rgba(84,224,117,0.08);
+  --p-accent: #3B82F6;
+  --p-accent-h: #60A5FA;
+  --p-accent-shadow: rgba(59,130,246,0.35);
+  --p-accent-shadow-h: rgba(96,165,250,0.5);
+  --p-card-border: rgba(99,130,255,0.2);
+  --p-sidebar-border: rgba(99,130,255,0.15);
+  --p-nav-active: rgba(59,130,246,0.2);
+  --p-nav-hover: rgba(59,130,246,0.1);
+  --p-header-bg: rgba(8,10,22,0.7);
+  --p-input-bg: rgba(8,10,30,0.5);
+  --p-input-border: rgba(99,130,255,0.3);
+}
+
+.theme-green {
+  --p-bg:     #0C2E1A;
+  --p-grad:   linear-gradient(150deg, #103822 0%, #123C25 25%, #0F3520 55%, #0C2E1A 80%, #0A2816 100%);
+  --p-orb1:   rgba(5,150,105,0.3);
+  --p-orb2:   rgba(52,211,153,0.2);
+  --p-orb3:   rgba(251,121,243,0.1);
+  --p-orb4:   rgba(84,224,117,0.15);
+  --p-accent: #059669;
+  --p-accent-h: #10B981;
+  --p-accent-shadow: rgba(5,150,105,0.4);
+  --p-accent-shadow-h: rgba(16,185,129,0.55);
+  --p-card-border: rgba(52,211,153,0.2);
+  --p-sidebar-border: rgba(52,211,153,0.15);
+  --p-nav-active: rgba(5,150,105,0.2);
+  --p-nav-hover: rgba(5,150,105,0.1);
+  --p-header-bg: rgba(5,15,10,0.7);
+  --p-input-bg: rgba(5,15,12,0.5);
+  --p-input-border: rgba(52,211,153,0.35);
+}
+
+/* ── Enterprise Light theme ────────────────────────────────────────────────── */
+/*
+ * WCAG contrast targets on white (#FFFFFF):
+ *   --p-text        #0F172A  slate-900  →  contrast 19.0 : 1  (AAA)
+ *   --p-text-muted  #334155  slate-700  →  contrast  9.7 : 1  (AAA)
+ *   --p-text-faint  #475569  slate-600  →  contrast  6.3 : 1  (AA)
+ *
+ * Design spec:
+ *   Background  : slate-50  (#F8FAFC)
+ *   Cards/Sidebar: white + slate-200 border + shadow-sm
+ *   Nav active  : indigo-50 (#EEF2FF) bg  +  indigo-700 (#4338CA) text
+ *   Traffic lights housing: slate-800 (#1E293B)
+ *   Bulbs       : emerald-500 / amber-500 / red-500
+ */
+.theme-light {
+  --p-bg:               #F8FAFC;   /* slate-50  */
+  --p-grad:             linear-gradient(160deg, #F8FAFC 0%, #F1F5F9 60%, #F8FAFC 100%);
+  --p-orb1:             rgba(67,56,202,0.03);
+  --p-orb2:             rgba(67,56,202,0.02);
+  --p-orb3:             rgba(67,56,202,0.015);
+  --p-orb4:             rgba(16,185,129,0.02);
+  /* Accent — indigo-700 */
+  --p-accent:           #4338CA;
+  --p-accent-h:         #3730A3;   /* indigo-800 */
+  --p-accent-shadow:    rgba(67,56,202,0.18);
+  --p-accent-shadow-h:  rgba(67,56,202,0.28);
+  /* Borders */
+  --p-card-border:      #E2E8F0;   /* slate-200 */
+  --p-sidebar-border:   #E2E8F0;
+  /* Nav */
+  --p-nav-active:       #EEF2FF;   /* indigo-50  */
+  --p-nav-hover:        #F5F3FF;   /* violet-50  */
+  /* Chrome */
+  --p-header-bg:        rgba(248,250,252,0.97);
+  /* Inputs */
+  --p-input-bg:         #FFFFFF;
+  --p-input-border:     #CBD5E1;   /* slate-300 */
+  /* Semantic KPI */
+  --p-success:          #10B981;   /* emerald-500 */
+  --p-warning:          #F59E0B;   /* amber-500   */
+  --p-danger:           #EF4444;   /* red-500     */
+  /* ── Text: strictly high-contrast, all pass WCAG AA on white ── */
+  --p-text:             #0F172A;   /* slate-900 — 19.0:1 on white  (AAA) */
+  --p-text-muted:       #334155;   /* slate-700 —  9.7:1 on white  (AAA) */
+  --p-text-faint:       #475569;   /* slate-600 —  6.3:1 on white  (AA)  */
+  /* Surfaces */
+  --p-card-bg:          #FFFFFF;
+  --p-sidebar-bg:       #FFFFFF;
+  /* Traffic light housing */
+  --p-traffic-bg:       #1E293B;   /* slate-800 */
+  --p-traffic-border:   #334155;   /* slate-700 */
+}
+
+/* ── Layer 1: Surface + component structural overrides ─────────────────────── */
+
+/* Base page color — inherited by everything without an explicit color */
+.theme-light,
+.theme-light body {
+  color: var(--p-text);
+}
+
+/* Cards: white + slate-200 border + soft shadow */
+.theme-light .card {
+  background: var(--p-card-bg);
+  border-color: var(--p-card-border);
+  color: var(--p-text);
+  box-shadow: 0 1px 4px rgba(15,23,42,0.07), 0 1px 2px rgba(15,23,42,0.04);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Inputs */
+.theme-light .sigma-input {
+  color: var(--p-text);
+  background-color: var(--p-input-bg);
+  border-color: var(--p-input-border);
+}
+.theme-light .sigma-input::placeholder { color: var(--p-text-muted); }
+.theme-light .sigma-input:focus {
+  border-color: var(--p-accent);
+  box-shadow: 0 0 0 3px rgba(67,56,202,0.12);
+}
+
+/* Buttons */
+.theme-light .btn-secondary {
+  background-color: #F1F5F9;
+  color: #334155;
+  border-color: #E2E8F0;
+}
+.theme-light .btn-secondary:hover:not(:disabled) {
+  background-color: #E2E8F0;
+  border-color: #CBD5E1;
+}
+
+/* Nav & sidebar */
+.theme-light aside { color: var(--p-text); }
+.theme-light aside a,
+.theme-light aside button { color: var(--p-text-muted) !important; }
+.theme-light aside a.text-sigma-accent,
+.theme-light aside a[style*="var(--p-accent)"],
+.theme-light aside a[class*="text-sigma-accent"] { color: var(--p-accent) !important; }
+
+/* Tailwind compiled sigma-ice classes */
+.theme-light .text-sigma-ice { color: var(--p-text) !important; }
+.theme-light [class*="text-sigma-ice"] { color: var(--p-text) !important; }
+
+/* Scrollbar */
+.theme-light ::-webkit-scrollbar-track { background: #F1F5F9; }
+.theme-light ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+.theme-light ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* ── Layer 2: Inline-style intercept ───────────────────────────────────────── */
+/*
+ * Many components use hardcoded rgba(237,240,254,X) for dark-theme text.
+ * Those values are invisible on white (#FFFFFF). The selectors below match
+ * the BROWSER-SERIALISED form (spaces after commas, colon+space) and remap
+ * each opacity band to a WCAG-compliant dark equivalent.
+ *
+ * NOTE: We match  "color: rgba(237, 240, 254"  (NOT "background-color:")
+ * so only text-color properties are targeted, never background colours.
+ *
+ * Opacity bands:
+ *   ≥ 0.6  →  --p-text        (slate-900, AAA)
+ *   0.4–0.59  →  --p-text-muted  (slate-700, AAA)
+ *   ≤ 0.39    →  --p-text-faint  (slate-600, AA)
+ *
+ * Each band lists BOTH the browser-normalised form ("237, 240, 254") AND the
+ * as-written compact form ("237,240,254") for maximum compatibility.
+ */
+
+/* ▸ High-opacity (≥ 0.6) → slate-900 */
+.theme-light [style*="color: rgba(237, 240, 254, 0.6"],
+.theme-light [style*="color: rgba(237, 240, 254, 0.7"],
+.theme-light [style*="color: rgba(237, 240, 254, 0.8"],
+.theme-light [style*="color: rgba(237, 240, 254, 0.9"],
+.theme-light [style*="color:rgba(237,240,254,0.6"],
+.theme-light [style*="color:rgba(237,240,254,0.7"],
+.theme-light [style*="color:rgba(237,240,254,0.8"],
+.theme-light [style*="color:rgba(237,240,254,0.9"],
+/* solid #EDF0FE */
+.theme-light [style*="color: #EDF0FE"],
+.theme-light [style*="color: #edf0fe"],
+.theme-light [style*="color: rgb(237, 240, 254)"] {
+  color: var(--p-text) !important;
+}
+
+/* ▸ Mid-opacity (0.4 – 0.59) → slate-700 */
+.theme-light [style*="color: rgba(237, 240, 254, 0.4"],
+.theme-light [style*="color: rgba(237, 240, 254, 0.5"],
+.theme-light [style*="color:rgba(237,240,254,0.4"],
+.theme-light [style*="color:rgba(237,240,254,0.5"] {
+  color: var(--p-text-muted) !important;
+}
+
+/* ▸ Low-opacity (≤ 0.39) → slate-600 */
+.theme-light [style*="color: rgba(237, 240, 254, 0.1"],
+.theme-light [style*="color: rgba(237, 240, 254, 0.2"],
+.theme-light [style*="color: rgba(237, 240, 254, 0.3"],
+.theme-light [style*="color:rgba(237,240,254,0.1"],
+.theme-light [style*="color:rgba(237,240,254,0.2"],
+.theme-light [style*="color:rgba(237,240,254,0.3"] {
+  color: var(--p-text-faint) !important;
+}
+
+/* ── Layer 3: Common dark-UI hardcoded hex/rgba accents ─────────────────────── */
+/*
+ * Several components use hardcoded dark-background colours for borders, chips,
+ * and section headers. Remap them so they read correctly on white.
+ */
+
+/* Section divider labels (e.g. "0 active filter(s)") */
+.theme-light [style*="color: rgba(237, 240, 254"],
+.theme-light [style*="color:rgba(237,240,254"] {
+  color: var(--p-text-muted) !important;
+}
+
+/* Ensure table/grid cell text is always readable */
+.theme-light table td,
+.theme-light table th {
+  color: var(--p-text);
+}
+
+/* Ensure modal / popover panel text inherits dark text */
+.theme-light [style*="backgroundColor: '#0B1748'"],
+.theme-light [style*="background-color: rgb(11, 23, 72)"] {
+  color: var(--p-text);
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+@layer base {
+  * { box-sizing: border-box; }
+
+  body {
+    background-color: var(--p-bg);
+    background-image:
+      radial-gradient(ellipse at 15% 10%, var(--p-orb1) 0%, transparent 45%),
+      radial-gradient(ellipse at 85% 15%, var(--p-orb2) 0%, transparent 40%),
+      radial-gradient(ellipse at 70% 85%, var(--p-orb3) 0%, transparent 45%),
+      radial-gradient(ellipse at 10% 80%, var(--p-orb4) 0%, transparent 40%),
+      var(--p-grad);
+    min-height: 100vh;
+    color: var(--p-text, #EDF0FE);
+    font-family: 'Assistant', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: rgba(20,65,245,0.08); }
+  ::-webkit-scrollbar-thumb { background: rgba(63,100,247,0.45); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(63,100,247,0.7); }
+}
+
+/* ── Components ────────────────────────────────────────────────────────────── */
+@layer components {
+  .card {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--p-card-border);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  }
+
+  .btn-primary {
+    background-color: var(--p-accent);
+    color: #ffffff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: background-color 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 12px var(--p-accent-shadow);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--p-accent-h);
+    box-shadow: 0 4px 18px var(--p-accent-shadow-h);
+  }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-secondary {
+    background-color: rgba(63,100,247,0.14);
+    color: #EDF0FE;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background-color 0.15s, border-color 0.15s;
+    cursor: pointer;
+    border: 1px solid rgba(63,100,247,0.35);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background-color: rgba(63,100,247,0.26);
+    border-color: rgba(99,130,255,0.55);
+  }
+
+  .badge-green  { background-color: rgba(84,224,117,0.15);  color: #54E075; border: 1px solid rgba(84,224,117,0.35);  font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; }
+  .badge-yellow { background-color: rgba(249,189,51,0.15);  color: #F9BD33; border: 1px solid rgba(249,189,51,0.35);  font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; }
+  .badge-red    { background-color: rgba(243,96,89,0.15);   color: #F36059; border: 1px solid rgba(243,96,89,0.35);   font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; }
+
+  .sigma-input {
+    width: 100%;
+    background-color: var(--p-input-bg);
+    border: 1px solid var(--p-input-border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    color: #EDF0FE;
+    font-family: 'Assistant', sans-serif;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  .sigma-input::placeholder { color: rgba(237,240,254,0.3); }
+  .sigma-input:focus {
+    border-color: var(--p-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--p-accent) 20%, transparent);
+  }
+}
+
+/* ── RTL: flip physical Tailwind classes that can't use logical properties ── */
+/*
+ * The sidebar and new components now use Tailwind logical classes
+ * (ms-*, ps-*, border-s, etc.) and CSS logical properties in inline styles.
+ * These overrides below cover third-party components and legacy utility usage.
+ */
+
+/* Text alignment */
+[dir="rtl"] .text-left  { text-align: right; }
+[dir="rtl"] .text-right { text-align: left; }
+
+/* Absolute/fixed positioning */
+[dir="rtl"] .right-0  { right: auto !important; left: 0 !important; }
+[dir="rtl"] .right-1  { right: auto !important; left: 0.25rem !important; }
+[dir="rtl"] .right-2  { right: auto !important; left: 0.5rem !important; }
+[dir="rtl"] .right-3  { right: auto !important; left: 0.75rem !important; }
+[dir="rtl"] .right-4  { right: auto !important; left: 1rem !important; }
+[dir="rtl"] .right-6  { right: auto !important; left: 1.5rem !important; }
+[dir="rtl"] .right-8  { right: auto !important; left: 2rem !important; }
+[dir="rtl"] .left-0   { left: auto !important; right: 0 !important; }
+[dir="rtl"] .left-1   { left: auto !important; right: 0.25rem !important; }
+[dir="rtl"] .left-2   { left: auto !important; right: 0.5rem !important; }
+[dir="rtl"] .left-3   { left: auto !important; right: 0.75rem !important; }
+[dir="rtl"] .left-4   { left: auto !important; right: 1rem !important; }
+[dir="rtl"] .left-6   { left: auto !important; right: 1.5rem !important; }
+
+/* Padding — inline-end (right in LTR → left in RTL) */
+[dir="rtl"] .pr-1  { padding-right: 0 !important; padding-left: 0.25rem !important; }
+[dir="rtl"] .pr-2  { padding-right: 0 !important; padding-left: 0.5rem !important; }
+[dir="rtl"] .pr-3  { padding-right: 0 !important; padding-left: 0.75rem !important; }
+[dir="rtl"] .pr-4  { padding-right: 0 !important; padding-left: 1rem !important; }
+[dir="rtl"] .pr-6  { padding-right: 0 !important; padding-left: 1.5rem !important; }
+[dir="rtl"] .pr-8  { padding-right: 0 !important; padding-left: 2rem !important; }
+[dir="rtl"] .pr-10 { padding-right: 0 !important; padding-left: 2.5rem !important; }
+
+/* Padding — inline-start (left in LTR → right in RTL) */
+[dir="rtl"] .pl-1  { padding-left: 0 !important; padding-right: 0.25rem !important; }
+[dir="rtl"] .pl-2  { padding-left: 0 !important; padding-right: 0.5rem !important; }
+[dir="rtl"] .pl-3  { padding-left: 0 !important; padding-right: 0.75rem !important; }
+[dir="rtl"] .pl-4  { padding-left: 0 !important; padding-right: 1rem !important; }
+[dir="rtl"] .pl-6  { padding-left: 0 !important; padding-right: 1.5rem !important; }
+[dir="rtl"] .pl-8  { padding-left: 0 !important; padding-right: 2rem !important; }
+[dir="rtl"] .pl-12 { padding-left: 0 !important; padding-right: 3rem !important; }
+
+/* Margin */
+[dir="rtl"] .ml-auto { margin-left: 0 !important; margin-right: auto !important; }
+[dir="rtl"] .mr-auto { margin-right: 0 !important; margin-left: auto !important; }
+[dir="rtl"] .ml-1    { margin-left: 0 !important; margin-right: 0.25rem !important; }
+[dir="rtl"] .ml-2    { margin-left: 0 !important; margin-right: 0.5rem !important; }
+[dir="rtl"] .ml-3    { margin-left: 0 !important; margin-right: 0.75rem !important; }
+[dir="rtl"] .mr-1    { margin-right: 0 !important; margin-left: 0.25rem !important; }
+[dir="rtl"] .mr-2    { margin-right: 0 !important; margin-left: 0.5rem !important; }
+
+/* Rounded corners — swap start/end */
+[dir="rtl"] .rounded-l-lg  { border-radius: 0 0.5rem 0.5rem 0 !important; }
+[dir="rtl"] .rounded-r-lg  { border-radius: 0.5rem 0 0 0.5rem !important; }
+[dir="rtl"] .rounded-tl-lg { border-top-left-radius: 0 !important; border-top-right-radius: 0.5rem !important; }
+[dir="rtl"] .rounded-tr-lg { border-top-right-radius: 0 !important; border-top-left-radius: 0.5rem !important; }
+
+/* Translate — flip horizontal translate for arrows/chevrons */
+[dir="rtl"] .translate-x-full  { --tw-translate-x: -100% !important; }
+[dir="rtl"] .-translate-x-full { --tw-translate-x: 100% !important; }
+
+/* Input: keep placeholder aligned with text direction */
+[dir="rtl"] input::placeholder,
+[dir="rtl"] textarea::placeholder { text-align: right; }

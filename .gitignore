@@ -1,0 +1,11 @@
+node_modules/
+server/node_modules/
+client/node_modules/
+server/data/
+server/sample-data/
+.env
+*.local
+dist/
+.dashboard.pids
+.version-dirty
+.claude/
