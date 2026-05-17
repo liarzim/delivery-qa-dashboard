@@ -14,7 +14,7 @@ import SectionHeader from '../components/SectionHeader';
 import SubDashboardTabs from '../components/SubDashboardTabs';
 import { useLanguage } from '../context/LanguageContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
-import { LayoutGrid, AlertCircle } from 'lucide-react';
+import { LayoutGrid, AlertCircle, Layers } from 'lucide-react';
 
 const ALL_WIDGETS = [
   { id: 'committed-rate',    label: 'Committed Rate',      category: 'Delivery' },
@@ -38,7 +38,7 @@ export default function SubDashboardPage() {
 
   const { delivery, qa } = useData();
   const { settings } = useSettings();
-  const { isOpen: bankOpen } = useWidgetBank();
+  const { isOpen: bankOpen, toggle: toggleBank, setIsOpen: setBankOpen } = useWidgetBank();
   // Synchronous init from localStorage — no effect flash
   const [subDash, setSubDash] = useState(() => {
     const all = store.get('sub_dashboards', []);
@@ -113,9 +113,16 @@ export default function SubDashboardPage() {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">
-        <WidgetBank widgets={ALL_WIDGETS} activeWidgetIds={gridWidgetIds} isOpen={bankOpen} />
 
-        <div className="flex-1 overflow-y-auto p-6 min-w-0">
+        <WidgetBank
+          widgets={ALL_WIDGETS}
+          activeWidgetIds={gridWidgetIds}
+          isOpen={bankOpen}
+          onClose={() => setBankOpen(false)}
+          style={{ order: 2 }}
+        />
+
+        <div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>
           {/* Show sibling tabs if this sub-dash has a parent */}
           {subDash?.parentId && (() => {
             const parentRoutes = { overview: '/', delivery: '/delivery', qa: '/qa' };
@@ -128,7 +135,17 @@ export default function SubDashboardPage() {
             title={title}
             subtitle={t('overview_subtitle')}
             action={
-              <button onClick={resetLayout} className="btn-secondary text-xs py-1.5">{t('overview_reset_layout')}</button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleBank}
+                  className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
+                  style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
+                >
+                  <Layers size={13} />
+                  {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
+                </button>
+                <button onClick={resetLayout} className="btn-secondary text-xs py-1.5">{t('overview_reset_layout')}</button>
+              </div>
             }
           />
 

@@ -11,7 +11,7 @@ import WidgetBank from '../components/WidgetBank';
 import SectionHeader from '../components/SectionHeader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SubDashboardTabs from '../components/SubDashboardTabs';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, Layers } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
 import { getTrafficLight, LIGHT_COLORS } from '../utils/thresholds';
@@ -210,7 +210,7 @@ function OverviewTrafficLights({ delivery, qa, settings, t }) {
 
 export default function MainDashboard() {
   const { t } = useLanguage();
-  const { isOpen: bankOpen } = useWidgetBank();
+  const { isOpen: bankOpen, toggle: toggleBank, setIsOpen: setBankOpen } = useWidgetBank();
   const { data: delivery, loading: dLoading } = useApi('/api/data/delivery');
   const { data: qa,       loading: qLoading } = useApi('/api/data/qa');
   const { data: settings }                     = useApi('/api/settings');
@@ -266,19 +266,40 @@ export default function MainDashboard() {
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      {/* flex-row — bank panel sits on the opposite side from the nav bar.
+          In LTR (EN) the nav is on the left so bank goes to the right (order:2).
+          In RTL (HE) the nav is on the right so bank goes to the left (order:-1). */}
       <div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">
-        <WidgetBank widgets={ALL_WIDGETS} activeWidgetIds={gridWidgetIds} isOpen={bankOpen} />
 
-        <div className="flex-1 overflow-y-auto p-6 min-w-0">
+        <WidgetBank
+          widgets={ALL_WIDGETS}
+          activeWidgetIds={gridWidgetIds}
+          isOpen={bankOpen}
+          onClose={() => setBankOpen(false)}
+          style={{ order: 2 }}
+        />
+
+        <div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>
           <SubDashboardTabs parentId="overview" parentPath="/" parentLabel={t('overview_title')} />
           <SectionHeader
             title={t('overview_title')}
             titleKey="overview.title"
             subtitle={t('overview_subtitle')}
             action={
-              <button onClick={resetLayout} className="btn-secondary text-xs py-1.5">
-                {t('overview_reset_layout')}
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Widget Bank toggle — visible on this layout page */}
+                <button
+                  onClick={toggleBank}
+                  className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
+                  style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
+                >
+                  <Layers size={13} />
+                  {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
+                </button>
+                <button onClick={resetLayout} className="btn-secondary text-xs py-1.5">
+                  {t('overview_reset_layout')}
+                </button>
+              </div>
             }
           />
 

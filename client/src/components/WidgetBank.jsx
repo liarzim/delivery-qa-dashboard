@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { GripVertical, CheckCircle2 } from 'lucide-react';
+import { GripVertical, CheckCircle2, X } from 'lucide-react';
 
 function BankItem({ widget, isOnGrid }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -46,23 +46,43 @@ function BankItem({ widget, isOnGrid }) {
   );
 }
 
-export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onToggle }) {
+export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, style }) {
   const categories = [...new Set(widgets.map((w) => w.category))];
 
   return (
     <aside
-      className={`shrink-0 transition-all duration-200 overflow-hidden ${isOpen ? 'w-56' : 'w-0'}`}
-      style={{ borderInlineEnd: '1px solid var(--p-card-border)', backgroundColor: 'var(--p-sidebar-bg)' }}
+      className={`shrink-0 transition-all duration-200 overflow-hidden ${isOpen ? 'w-60' : 'w-0'}`}
+      style={{ borderInlineStart: '1px solid var(--p-card-border)', backgroundColor: 'var(--p-sidebar-bg)', ...style }}
     >
-      <div className="w-56 h-full flex flex-col">
-        <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(20,65,245,0.2)' }}>
-          <p className="text-xs font-bold text-sigma-ice">Widget Bank</p>
-          <p className="text-xs mt-0.5" style={{ color: 'rgba(237,240,254,0.4)' }}>Drag to add to grid</p>
+      <div className="w-60 h-full flex flex-col">
+
+        {/* Header with close button */}
+        <div className="flex items-center justify-between px-4 py-3"
+          style={{ borderBottom: '1px solid rgba(20,65,245,0.2)' }}>
+          <div>
+            <p className="text-xs font-bold text-sigma-ice">Widget Bank</p>
+            <p className="text-xs mt-0.5" style={{ color: 'rgba(237,240,254,0.4)' }}>Drag to add to grid</p>
+          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg transition-colors"
+              style={{ color: 'rgba(237,240,254,0.4)' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#EDF0FE'}
+              onMouseLeave={e => e.currentTarget.style.color = 'rgba(237,240,254,0.4)'}
+              title="Close"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
+
+        {/* Widget list */}
         <div className="flex-1 overflow-y-auto p-3 space-y-4">
           {categories.map((cat) => (
             <div key={cat}>
-              <p className="text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'rgba(237,240,254,0.35)' }}>{cat}</p>
+              <p className="text-xs font-semibold mb-2 uppercase tracking-wider"
+                style={{ color: 'rgba(237,240,254,0.35)' }}>{cat}</p>
               <div className="space-y-1.5">
                 {widgets.filter((w) => w.category === cat).map((w) => (
                   <BankItem key={w.id} widget={w} isOnGrid={activeWidgetIds.includes(w.id)} />
