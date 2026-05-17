@@ -238,7 +238,7 @@ export default function WidgetBuilderPage() {
       </div>
 
       {/* ── Top panel: Config + Preview ────────────────────────────────────── */}
-      <div className="flex shrink-0" style={{ height: '52vh', borderBottom: '1px solid rgba(20,65,245,0.2)' }}>
+      <div className="flex shrink-0" style={{ height: '62vh', borderBottom: '1px solid rgba(20,65,245,0.2)' }}>
 
         {/* Config panel */}
         <div className="w-72 overflow-y-auto p-4 shrink-0"
@@ -282,28 +282,8 @@ export default function WidgetBuilderPage() {
             </div>
           </Row>
 
-          <Row label="X-Axis (Group by)">
-            {dataLoading ? (
-              <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(237,240,254,0.4)' }}>
-                <Loader2 size={12} className="animate-spin" /> Loading columns…
-              </div>
-            ) : (
-              <select value={config.xField} onChange={e => set({ xField: e.target.value })} className={inputClass}>
-                <option value="">— select column —</option>
-                {columns.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            )}
-          </Row>
-
-          <Row label="Y-Axis (Measure)">
-            <select value={config.yField} onChange={e => set({ yField: e.target.value })} className={inputClass}
-              disabled={config.formula === 'count'}>
-              <option value="">{config.formula === 'count' ? '(row count)' : '— select column —'}</option>
-              {numericCols.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Row>
-
-          <Row label="Aggregation Formula">
+          {/* ── Formula — moved up so it's always visible ──────────────── */}
+          <Row label="Formula">
             <select value={config.formula} onChange={e => set({ formula: e.target.value, yField: e.target.value === 'count' ? '' : config.yField })}
               className={inputClass}>
               {FORMULAS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
@@ -480,6 +460,50 @@ export default function WidgetBuilderPage() {
                 </Row>
               )}
             </>
+          )}
+
+          {/* X / Y axis — shown below formula so context is clear */}
+          {config.formula !== 'countif_ratio' && (
+            <>
+              <Row label="X-Axis (Group by)">
+                {dataLoading ? (
+                  <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(237,240,254,0.4)' }}>
+                    <Loader2 size={12} className="animate-spin" /> Loading columns…
+                  </div>
+                ) : (
+                  <select value={config.xField} onChange={e => set({ xField: e.target.value })} className={inputClass}>
+                    <option value="">— select column —</option>
+                    {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                )}
+              </Row>
+              <Row label="Y-Axis (Measure)">
+                <select value={config.yField} onChange={e => set({ yField: e.target.value })} className={inputClass}
+                  disabled={config.formula === 'count'}>
+                  <option value="">{config.formula === 'count' ? '(row count)' : '— select column —'}</option>
+                  {numericCols.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </Row>
+            </>
+          )}
+          {config.formula === 'countif_ratio' && (
+            <Row label="X-Axis (Group by)">
+              {dataLoading ? (
+                <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(237,240,254,0.4)' }}>
+                  <Loader2 size={12} className="animate-spin" /> Loading columns…
+                </div>
+              ) : (
+                <>
+                  <select value={config.xField} onChange={e => set({ xField: e.target.value })} className={inputClass}>
+                    <option value="">— no grouping (single total) —</option>
+                    {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.25)' }}>
+                    Leave blank for one overall % (ideal for Gauge)
+                  </p>
+                </>
+              )}
+            </Row>
           )}
 
           <Row label="Accent Color">
