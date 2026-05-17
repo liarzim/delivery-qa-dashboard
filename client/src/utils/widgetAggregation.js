@@ -86,12 +86,27 @@ export function applyFilters(rows, filters = {}) {
 }
 
 // ── Safe custom formula evaluator ────────────────────────────────────────────
-// Supports: COUNT(*), SUM(field), AVG(field), AVERAGE(field), MIN(field), MAX(field)
-// plus numeric literals and operators + - * / ( )
+// Supports:
+//   COUNT(*)             – row count in group
+//   COUNTIF(col,"val")   – rows where col equals val (case-insensitive)
+//   COUNTIF(col,"*val*") – rows where col contains val  (wrap value with *)
+//   SUM(field), AVG(field), AVERAGE(field), MIN(field), MAX(field)
+//   Numeric literals and operators: + - * / ( )
 export function evaluateCustomFormula(groupRows, expression) {
   if (!expression?.trim()) return 0;
   try {
     let expr = expression
+      // COUNTIF(field, "value") — exact or wildcard (*val*) match
+      .replace(/COUNTIF\s*\(\s*([^,]+?)\s*,\s*["']?([^"')]+?)["']?\s*\)/gi, (_, field, val) => {
+        field = field.trim();
+        val   = val.trim();
+        const wildcard = val.startsWith('*') && val.endsWith('*');
+        const inner    = wildcard ? val.slice(1, -1).toLowerCase() : val.toLowerCase();
+        return groupRows.filter(r => {
+          const cell = String(r[field] ?? '').toLowerCase();
+          return wildcard ? cell.includes(inner) : cell === inner;
+        }).length;
+      })
       // COUNT(*) or COUNT(anything)
       .replace(/COUNT\s*\([^)]*\)/gi, () => groupRows.length)
       // SUM(field)
@@ -129,9 +144,43 @@ export function evaluateCustomFormula(groupRows, expression) {
   }
 }
 
+// ── Test a single row against a countif_ratio condition ──────────────────────
+function rowMatchesCondition(row, field, op, value) {
+  if (!field) return false;
+  const cell = String(row[field] ?? '').toLowerCase();
+  // Support comma-separated OR values: "Done, Closed"
+  const targets = String(value ?? '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  if (!targets.length) return false;
+  return targets.some(target => {
+    switch (op) {
+      case 'contains':     return cell.includes(target);
+      case 'not_eq':       return cell !== target;
+      case 'not_contains': return !cell.includes(target);
+      case 'starts_with':  return cell.startsWith(target);
+      default:             return cell === target;   // 'eq'
+    }
+  });
+}
+
 // ── Aggregate rows by xField, applying formula to yField ─────────────────────
-export function aggregateData(rows, xField, yField, formula = 'count', customFormula = '') {
-  if (!rows.length || !xField) return [];
+// extraConfig carries countif_ratio fields: countifField, countifOp, countifValue,
+// denomField, denomOp, denomValue
+export function aggregateData(rows, xField, yField, formula = 'count', customFormula = '', extraConfig = {}) {
+  if (!rows.length) return [];
+
+  // countif_ratio with no xField → single global percentage (useful for Gauge)
+  if (formula === 'countif_ratio' && !xField) {
+    const { countifField, countifOp = 'eq', countifValue = '',
+            denomField, denomOp = 'eq', denomValue } = extraConfig;
+    const numRows  = rows.filter(r => rowMatchesCondition(r, countifField, countifOp, countifValue));
+    const denomRows = denomField
+      ? rows.filter(r => rowMatchesCondition(r, denomField, denomOp, denomValue))
+      : rows;
+    const pct = denomRows.length > 0 ? (numRows.length / denomRows.length) * 100 : 0;
+    return [{ x: 'Total', y: Math.round(pct * 100) / 100, count: rows.length }];
+  }
+
+  if (!xField) return [];
 
   const groups = new Map();
   for (const row of rows) {
@@ -145,6 +194,15 @@ export function aggregateData(rows, xField, yField, formula = 'count', customFor
     let value = 0;
     if (formula === 'custom') {
       value = evaluateCustomFormula(groupRows, customFormula);
+    } else if (formula === 'countif_ratio') {
+      // Count matching rows ÷ denominator rows × 100
+      const { countifField, countifOp = 'eq', countifValue = '',
+              denomField, denomOp = 'eq', denomValue } = extraConfig;
+      const numRows   = groupRows.filter(r => rowMatchesCondition(r, countifField, countifOp, countifValue));
+      const denomRows = denomField
+        ? groupRows.filter(r => rowMatchesCondition(r, denomField, denomOp, denomValue))
+        : groupRows;
+      value = denomRows.length > 0 ? (numRows.length / denomRows.length) * 100 : 0;
     } else if (formula === 'count') {
       value = groupRows.length;
     } else {
@@ -169,8 +227,11 @@ export function aggregateData(rows, xField, yField, formula = 'count', customFor
 // ── Top-level helper: filter + aggregate from a config object ─────────────────
 export function buildChartData(rows, config) {
   const filtered = applyFilters(rows, config.filters || {});
-  if (!config.xField) return [];
-  return aggregateData(filtered, config.xField, config.yField, config.formula, config.customFormula || '');
+  const xField   = config.chartType === 'gauge' && config.formula === 'countif_ratio'
+    ? ''           // gauge + countif_ratio → single global value, no grouping
+    : config.xField;
+  if (!xField && config.formula !== 'countif_ratio') return [];
+  return aggregateData(filtered, xField, config.yField, config.formula, config.customFormula || '', config);
 }
 
 // ── Unique text values for a column (for filter dropdown) ────────────────────

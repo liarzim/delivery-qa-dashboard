@@ -35,12 +35,21 @@ const CHART_TYPES = [
 ];
 
 const FORMULAS = [
-  { id: 'count',   label: 'Count' },
-  { id: 'sum',     label: 'Sum' },
-  { id: 'average', label: 'Average' },
-  { id: 'min',     label: 'Min' },
-  { id: 'max',     label: 'Max' },
-  { id: 'custom',  label: 'Custom…' },
+  { id: 'count',         label: 'Count' },
+  { id: 'sum',           label: 'Sum' },
+  { id: 'average',       label: 'Average' },
+  { id: 'min',           label: 'Min' },
+  { id: 'max',           label: 'Max' },
+  { id: 'countif_ratio', label: 'Conditional %' },
+  { id: 'custom',        label: 'Custom…' },
+];
+
+const COUNTIF_OPS = [
+  { id: 'eq',           label: 'equals' },
+  { id: 'not_eq',       label: 'not equals' },
+  { id: 'contains',     label: 'contains' },
+  { id: 'not_contains', label: 'does not contain' },
+  { id: 'starts_with',  label: 'starts with' },
 ];
 
 const DATA_SOURCES = [
@@ -67,6 +76,13 @@ const DEFAULT_CONFIG = {
   gauge2Field:          '',
   gaugeLabel1:          '',
   gaugeLabel2:          '',
+  // Conditional % formula
+  countifField:  '',
+  countifOp:     'eq',
+  countifValue:  '',
+  denomField:    '',
+  denomOp:       'eq',
+  denomValue:    '',
 };
 
 // ── Small shared form row ──────────────────────────────────────────────────────
@@ -294,17 +310,115 @@ export default function WidgetBuilderPage() {
             </select>
           </Row>
 
+          {/* ── Conditional % formula builder ──────────────────────────── */}
+          {config.formula === 'countif_ratio' && (
+            <>
+              {/* Numerator */}
+              <div className="mb-2 px-2 py-1.5 rounded text-xs font-semibold"
+                style={{ backgroundColor: 'rgba(20,65,245,0.1)', color: 'rgba(237,240,254,0.5)' }}>
+                Numerator — count rows where…
+              </div>
+              <Row label="Column">
+                <select value={config.countifField}
+                  onChange={e => set({ countifField: e.target.value, countifValue: '' })}
+                  className={inputClass}>
+                  <option value="">— select column —</option>
+                  {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </Row>
+              <Row label="Condition">
+                <select value={config.countifOp}
+                  onChange={e => set({ countifOp: e.target.value })}
+                  className={inputClass}>
+                  {COUNTIF_OPS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                </select>
+              </Row>
+              <Row label="Value">
+                {/* If column has known text options, show a datalist */}
+                <input
+                  list="countif-values"
+                  value={config.countifValue}
+                  onChange={e => set({ countifValue: e.target.value })}
+                  className={inputClass}
+                  placeholder='e.g. Done  (comma-separate for OR)'
+                  spellCheck={false}
+                />
+                {config.countifField && columnMeta[config.countifField]?.options?.length > 0 && (
+                  <datalist id="countif-values">
+                    {columnMeta[config.countifField].options.map(v => (
+                      <option key={v} value={v} />
+                    ))}
+                  </datalist>
+                )}
+                <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.25)' }}>
+                  Separate multiple values with commas for OR logic
+                </p>
+              </Row>
+
+              {/* Denominator */}
+              <div className="mb-2 px-2 py-1.5 rounded text-xs font-semibold mt-1"
+                style={{ backgroundColor: 'rgba(20,65,245,0.1)', color: 'rgba(237,240,254,0.5)' }}>
+                Denominator — divide by…
+              </div>
+              <Row label="Denominator type">
+                <select
+                  value={config.denomField ? 'condition' : 'total'}
+                  onChange={e => set({ denomField: e.target.value === 'total' ? '' : config.denomField })}
+                  className={inputClass}>
+                  <option value="total">All rows in group</option>
+                  <option value="condition">Rows matching another condition</option>
+                </select>
+              </Row>
+              {config.denomField !== '' && (
+                <>
+                  <Row label="Column">
+                    <select value={config.denomField}
+                      onChange={e => set({ denomField: e.target.value, denomValue: '' })}
+                      className={inputClass}>
+                      <option value="">— select column —</option>
+                      {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </Row>
+                  <Row label="Condition">
+                    <select value={config.denomOp}
+                      onChange={e => set({ denomOp: e.target.value })}
+                      className={inputClass}>
+                      {COUNTIF_OPS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                    </select>
+                  </Row>
+                  <Row label="Value">
+                    <input
+                      list="denom-values"
+                      value={config.denomValue}
+                      onChange={e => set({ denomValue: e.target.value })}
+                      className={inputClass}
+                      placeholder="e.g. Active"
+                      spellCheck={false}
+                    />
+                    {config.denomField && columnMeta[config.denomField]?.options?.length > 0 && (
+                      <datalist id="denom-values">
+                        {columnMeta[config.denomField].options.map(v => (
+                          <option key={v} value={v} />
+                        ))}
+                      </datalist>
+                    )}
+                  </Row>
+                </>
+              )}
+            </>
+          )}
+
           {config.formula === 'custom' && (
             <Row label="Expression">
               <input
                 value={config.customFormula}
                 onChange={e => set({ customFormula: e.target.value })}
                 className={inputClass}
-                placeholder="e.g. SUM(bugs) / COUNT(*) * 100"
+                placeholder='e.g. COUNTIF(Status,"Done") / COUNT(*) * 100'
                 spellCheck={false}
               />
               <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.3)' }}>
-                Tokens: COUNT(*), SUM(col), AVG(col), MIN(col), MAX(col)
+                Functions: COUNT(*), COUNTIF(col,"val"), SUM(col), AVG(col), MIN(col), MAX(col)
               </p>
             </Row>
           )}
