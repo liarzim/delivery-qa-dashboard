@@ -19,6 +19,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import SubDashboardTabs from '../components/SubDashboardTabs';
 import WidgetBank from '../components/WidgetBank';
 import GridWidget from '../components/GridWidget';
+import GridDropZone from '../components/GridDropZone';
 import { AlertCircle, ChevronDown, ChevronRight, ChevronLeft, Layers, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
@@ -346,37 +347,39 @@ export default function DeliveryDashboard() {
             widgetMap={widgetMap}
           />
 
-          {/* ── Custom widgets zone ── */}
-          {customGrid.gridWidgets.length > 0 && (
-            <div className="mt-6">
-              <p className="text-xs font-bold uppercase tracking-widest mb-3"
-                style={{ color: 'rgba(237,240,254,0.35)', letterSpacing: '0.1em' }}>
-                {lang === 'he' ? 'ווידג\'טים מותאמים' : 'Custom Widgets'}
-              </p>
-              <SortableContext items={customGrid.gridWidgetIds} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-3 gap-4">
-                  {customGrid.gridWidgets.map(widget => (
-                    <GridWidget
-                      key={widget.id}
-                      widget={widget}
-                      delivery={data}
-                      qa={qaData}
-                      settings={settings}
-                      onRemove={customGrid.removeWidget}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </div>
-          )}
+          {/* ── Custom widgets zone (droppable even when empty) ── */}
+          <GridDropZone>
+            {customGrid.gridWidgets.length > 0 && (
+              <div className="mt-6">
+                <p className="text-xs font-bold uppercase tracking-widest mb-3"
+                  style={{ color: 'rgba(237,240,254,0.35)', letterSpacing: '0.1em' }}>
+                  {lang === 'he' ? 'ווידג\'טים מותאמים' : 'Custom Widgets'}
+                </p>
+                <SortableContext items={customGrid.gridWidgetIds} strategy={rectSortingStrategy}>
+                  <div className="grid grid-cols-3 gap-4">
+                    {customGrid.gridWidgets.map(widget => (
+                      <GridWidget
+                        key={widget.id}
+                        widget={widget}
+                        delivery={data}
+                        qa={qaData}
+                        settings={settings}
+                        onRemove={customGrid.removeWidget}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </div>
+            )}
 
-          {bankOpen && customGrid.gridWidgets.length === 0 && (
-            <div className="mt-6 border-2 border-dashed rounded-xl flex flex-col items-center justify-center py-12 gap-3"
-              style={{ borderColor: 'rgba(120,150,255,0.2)', color: 'rgba(237,240,254,0.3)' }}>
-              <LayoutGrid size={28} />
-              <p className="text-sm">{lang === 'he' ? 'גרור ווידג\'ט לכאן' : 'Drag a widget here to add it'}</p>
-            </div>
-          )}
+            {bankOpen && customGrid.gridWidgets.length === 0 && (
+              <div className="mt-6 border-2 border-dashed rounded-xl flex flex-col items-center justify-center py-12 gap-3"
+                style={{ borderColor: 'rgba(120,150,255,0.2)', color: 'rgba(237,240,254,0.3)' }}>
+                <LayoutGrid size={28} />
+                <p className="text-sm">{lang === 'he' ? 'גרור ווידג\'ט לכאן' : 'Drag a widget here to add it'}</p>
+              </div>
+            )}
+          </GridDropZone>
         </div>
       </div>
 

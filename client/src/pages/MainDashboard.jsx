@@ -8,6 +8,7 @@ import { useApi } from '../hooks/useApi';
 import { store } from '../lib/store';
 import GridWidget from '../components/GridWidget';
 import WidgetBank from '../components/WidgetBank';
+import GridDropZone from '../components/GridDropZone';
 import SectionHeader from '../components/SectionHeader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SubDashboardTabs from '../components/SubDashboardTabs';
@@ -256,6 +257,8 @@ export default function MainDashboard() {
       }
       return;
     }
+    // Ignore drops onto the drop-zone sentinel (not a real widget)
+    if (over.id === 'grid-drop-zone') return;
     if (active.id !== over.id) {
       const oldIndex = gridWidgetIds.indexOf(active.id);
       const newIndex = gridWidgetIds.indexOf(over.id);
@@ -319,28 +322,30 @@ export default function MainDashboard() {
           {/* ── 3 Traffic Lights ── */}
           <OverviewTrafficLights delivery={delivery} qa={qa} settings={settings} t={t} />
 
-          {gridWidgets.length === 0 ? (
-            <div className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center py-20 gap-3"
-              style={{ borderColor: 'rgba(120,150,255,0.2)', color: 'rgba(237,240,254,0.3)' }}>
-              <LayoutGrid size={32} />
-              <p className="text-sm">{t('overview_drop_hint')}</p>
-            </div>
-          ) : (
-            <SortableContext items={gridWidgetIds} strategy={rectSortingStrategy}>
-              <div className="grid grid-cols-3 gap-4">
-                {gridWidgets.map(widget => (
-                  <GridWidget
-                    key={widget.id}
-                    widget={widget}
-                    delivery={delivery}
-                    qa={qa}
-                    settings={settings}
-                    onRemove={removeWidget}
-                  />
-                ))}
+          <GridDropZone>
+            {gridWidgets.length === 0 ? (
+              <div className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center py-20 gap-3"
+                style={{ borderColor: 'rgba(120,150,255,0.2)', color: 'rgba(237,240,254,0.3)' }}>
+                <LayoutGrid size={32} />
+                <p className="text-sm">{t('overview_drop_hint')}</p>
               </div>
-            </SortableContext>
-          )}
+            ) : (
+              <SortableContext items={gridWidgetIds} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-3 gap-4">
+                  {gridWidgets.map(widget => (
+                    <GridWidget
+                      key={widget.id}
+                      widget={widget}
+                      delivery={delivery}
+                      qa={qa}
+                      settings={settings}
+                      onRemove={removeWidget}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            )}
+          </GridDropZone>
         </div>
       </div>
 
