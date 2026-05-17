@@ -34,13 +34,15 @@ export default function LivePreview({ config, chartData, rawRows = [] }) {
   const type   = config.chartType || 'bar';
   const noData = !chartData || chartData.length === 0;
 
+  // Always call hooks unconditionally (Rules of Hooks)
+  const kpiTotal = useMemo(() => chartData?.reduce((a, b) => a + b.y, 0) ?? 0, [chartData]);
+
   // KPI Card
   if (type === 'kpi') {
-    const total = useMemo(() => chartData?.reduce((a, b) => a + b.y, 0) ?? 0, [chartData]);
     return (
       <div className="card h-full flex flex-col items-center justify-center gap-2">
         <p className="text-xs font-semibold" style={{ color: 'rgba(237,240,254,0.5)' }}>{config.name || 'KPI'}</p>
-        <p className="text-5xl font-bold" style={{ color }}>{total.toLocaleString()}</p>
+        <p className="text-5xl font-bold" style={{ color }}>{kpiTotal.toLocaleString()}</p>
         <p className="text-xs" style={{ color: 'rgba(237,240,254,0.35)' }}>
           {config.formula?.toUpperCase()} of {config.yField || 'rows'} by {config.xField || '—'}
         </p>

@@ -33,11 +33,11 @@ export default function CustomWidgetRenderer({ widgetId, config, name, compact =
     if (!config?.dataSource) return;
     setLoading(true);
     setError(null);
-    fetchRawData(config.dataSource, user)
+    fetchRawData(config.dataSource, user, config.sheet || undefined)
       .then(setRows)
       .catch(e => setError(e.message || 'Failed to load data'))
       .finally(() => setLoading(false));
-  }, [config?.dataSource, user]);
+  }, [config?.dataSource, config?.sheet, user]);
 
   const chartData = useMemo(() => {
     if (!rows.length || !config) return [];
