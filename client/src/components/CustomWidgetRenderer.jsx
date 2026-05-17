@@ -15,6 +15,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { fetchRawData } from '../services/widgetApi';
 import { buildChartData } from '../utils/widgetAggregation';
 import LivePreview from './LivePreview';
@@ -22,6 +23,7 @@ import { Loader2, AlertCircle, Pencil } from 'lucide-react';
 
 export default function CustomWidgetRenderer({ widgetId, config, name, compact = false }) {
   const { user }    = useAuth();
+  const { lang }    = useLanguage();
   const navigate    = useNavigate();
   const [rows, setRows]       = useState([]);
   const [loading, setLoading] = useState(false);
@@ -80,7 +82,9 @@ export default function CustomWidgetRenderer({ widgetId, config, name, compact =
       {!compact && (
         <div className="flex items-center justify-between px-3 pt-3 pb-1 shrink-0">
           <p className="text-xs font-semibold truncate" style={{ color: 'rgba(237,240,254,0.7)' }}>
-            {name || config.name || 'Custom Widget'}
+            {lang === 'he' && config.name_he
+              ? config.name_he
+              : (name || config.name || 'Custom Widget')}
           </p>
           {widgetId && (
             <button

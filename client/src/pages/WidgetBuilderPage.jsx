@@ -60,6 +60,7 @@ const DATA_SOURCES = [
 
 const DEFAULT_CONFIG = {
   name: '',
+  name_he: '',
   chartType: 'bar',
   dataSource: 'delivery',
   sheet: '',
@@ -245,9 +246,14 @@ export default function WidgetBuilderPage() {
         <div className="w-72 overflow-y-auto p-4 shrink-0"
           style={{ borderRight: '1px solid rgba(20,65,245,0.2)', backgroundColor: 'rgba(20,65,245,0.04)' }}>
 
-          <Row label="Widget Name">
+          <Row label="Widget Name (EN)">
             <input value={config.name} onChange={e => set({ name: e.target.value })}
-              className={inputClass} placeholder="e.g. Bug Count by PI" />
+              className={inputClass} placeholder="e.g. Bug Count by PI" dir="ltr" />
+          </Row>
+
+          <Row label="שם ווידג'ט (HE)">
+            <input value={config.name_he || ''} onChange={e => set({ name_he: e.target.value })}
+              className={inputClass} placeholder="לדוגמה: מספר באגים לפי PI" dir="rtl" />
           </Row>
 
           <Row label="Data Source">

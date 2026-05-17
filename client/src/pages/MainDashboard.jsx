@@ -15,25 +15,7 @@ import { LayoutGrid, Layers } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
 import { getTrafficLight, LIGHT_COLORS } from '../utils/thresholds';
-
-const ALL_WIDGETS = [
-  { id: 'committed-rate',   label: 'Committed Rate',    category: 'Delivery' },
-  { id: 'uncommitted-rate', label: 'Uncommitted Rate',  category: 'Delivery' },
-  { id: 'overall-rate',     label: 'Overall Rate',      category: 'Delivery' },
-  { id: 'avg-velocity',     label: 'Avg Velocity',      category: 'Delivery' },
-  { id: 'throughput',       label: 'Throughput',        category: 'Delivery' },
-  { id: 'committed-gauge',  label: 'Committed Gauge',   category: 'Delivery' },
-  { id: 'reopen-pct',       label: 'Reopen %',          category: 'QA' },
-  { id: 'rejected-pct',     label: 'Rejected %',        category: 'QA' },
-  { id: 'escaping-pct',     label: 'Escaping %',        category: 'QA' },
-  { id: 'reopen-density',   label: 'Reopen Density',    category: 'QA' },
-  { id: 'escaping-density', label: 'Escaping Density',  category: 'QA' },
-];
-
-const DEFAULT_LAYOUT = [
-  'committed-rate', 'overall-rate', 'avg-velocity',
-  'reopen-pct', 'rejected-pct', 'escaping-pct',
-];
+import { ALL_WIDGETS, DEFAULT_LAYOUT } from '../constants/widgets';
 
 // ── Traffic Light card ────────────────────────────────────────────────────────
 
@@ -209,8 +191,8 @@ function OverviewTrafficLights({ delivery, qa, settings, t }) {
 // ── Main dashboard page ───────────────────────────────────────────────────────
 
 export default function MainDashboard() {
-  const { t } = useLanguage();
-  const { isOpen: bankOpen, toggle: toggleBank, setIsOpen: setBankOpen } = useWidgetBank();
+  const { t, lang } = useLanguage();
+  const { isOpen: bankOpen, toggle: toggleBank, setIsOpen: setBankOpen, customWidgets } = useWidgetBank();
   const { data: delivery, loading: dLoading } = useApi('/api/data/delivery');
   const { data: qa,       loading: qLoading } = useApi('/api/data/qa');
   const { data: settings }                     = useApi('/api/settings');
@@ -224,9 +206,40 @@ export default function MainDashboard() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const gridWidgets  = gridWidgetIds.map(id => ALL_WIDGETS.find(w => w.id === id)).filter(Boolean);
+  // Helper: resolve a widget object (built-in or custom) by its grid ID
+  const resolveWidget = (wid) => {
+    const builtin = ALL_WIDGETS.find(w => w.id === wid);
+    if (builtin) {
+      return lang === 'he'
+        ? { ...builtin, label: builtin.label_he || builtin.label }
+        : builtin;
+    }
+    if (String(wid).startsWith('custom_')) {
+      const numId = String(wid).replace('custom_', '');
+      const cw    = customWidgets.find(w => String(w.id) === numId);
+      if (cw) {
+        const cfg     = cw.config || {};
+        const isHe    = lang === 'he';
+        return {
+          id:     wid,
+          label:  isHe && cfg.name_he ? cfg.name_he : (cw.name || 'Custom'),
+          config: cfg,
+          status: cw.status,
+        };
+      }
+      return { id: wid, label: 'Custom Widget', config: {} };
+    }
+    return null;
+  };
+
+  const gridWidgets  = gridWidgetIds.map(resolveWidget).filter(Boolean);
   const activeWidget = activeId
-    ? ALL_WIDGETS.find(w => w.id === activeId || `bank-${w.id}` === activeId)
+    ? (() => {
+        const raw = String(activeId).startsWith('bank-')
+          ? String(activeId).replace('bank-', '')
+          : activeId;
+        return resolveWidget(raw);
+      })()
     : null;
 
   const handleDragStart = ({ active }) => setActiveId(active.id);
