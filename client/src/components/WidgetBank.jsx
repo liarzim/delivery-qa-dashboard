@@ -1,32 +1,64 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { GripVertical, CheckCircle2, X, Layers } from 'lucide-react';
+import { GripVertical, CheckCircle2, X, Layers, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
 import { useLanguage } from '../context/LanguageContext';
+import { widgetApi } from '../services/widgetApi';
 
 // ── Single draggable item ──────────────────────────────────────────────────────
-function BankItem({ widget, isOnGrid }) {
+function BankItem({ widget, isOnGrid, onDelete }) {
+  const [confirming, setConfirming] = useState(false);
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `bank-${widget.id}`,
     data: { widget, fromBank: true },
-    disabled: isOnGrid,
+    disabled: isOnGrid || confirming,
   });
 
   const style = transform
     ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 50 }
     : undefined;
 
+  const baseBg = isOnGrid
+    ? 'rgba(20,65,245,0.04)'
+    : isDragging
+      ? 'rgba(20,65,245,0.2)'
+      : 'rgba(20,65,245,0.08)';
+
+  // ── Confirm-delete mode ────────────────────────────────────────────────────
+  if (confirming) {
+    return (
+      <div
+        ref={setNodeRef}
+        className="flex items-center gap-2 px-3 py-2.5 rounded-lg select-none"
+        style={{ backgroundColor: 'rgba(243,96,89,0.12)', border: '1px solid rgba(243,96,89,0.4)' }}
+      >
+        <p className="text-xs flex-1 truncate" style={{ color: 'rgba(237,240,254,0.7)' }}>
+          Delete &ldquo;{widget.label}&rdquo;?
+        </p>
+        <button
+          onClick={() => { onDelete(widget.id); setConfirming(false); }}
+          className="text-xs px-1.5 py-0.5 rounded font-semibold"
+          style={{ backgroundColor: '#F36059', color: '#fff' }}
+          title="Confirm delete"
+        >✓</button>
+        <button
+          onClick={() => setConfirming(false)}
+          className="text-xs px-1.5 py-0.5 rounded font-semibold"
+          style={{ backgroundColor: 'rgba(237,240,254,0.1)', color: 'rgba(237,240,254,0.7)' }}
+          title="Cancel"
+        >✗</button>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={{
         ...style,
-        backgroundColor: isOnGrid
-          ? 'rgba(20,65,245,0.04)'
-          : isDragging
-            ? 'rgba(20,65,245,0.2)'
-            : 'rgba(20,65,245,0.08)',
+        backgroundColor: baseBg,
         border: isOnGrid
           ? '1px solid rgba(20,65,245,0.15)'
           : isDragging
@@ -46,6 +78,16 @@ function BankItem({ widget, isOnGrid }) {
         <p className="text-xs truncate" style={{ color: 'rgba(237,240,254,0.4)' }}>{widget.category}</p>
       </div>
       {isOnGrid && <CheckCircle2 size={12} className="text-sigma-accent shrink-0" />}
+      {onDelete && !isOnGrid && (
+        <button
+          onClick={e => { e.stopPropagation(); setConfirming(true); }}
+          className="shrink-0 p-0.5 rounded opacity-40 hover:opacity-100 transition-opacity"
+          style={{ color: '#F36059' }}
+          title="Remove from bank"
+        >
+          <Trash2 size={11} />
+        </button>
+      )}
     </div>
   );
 }
@@ -62,19 +104,32 @@ function SectionTitle({ children }) {
 
 // ── Main bank panel ────────────────────────────────────────────────────────────
 export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, style }) {
-  const { user }          = useAuth();
-  const { customWidgets } = useWidgetBank();
-  const { lang }          = useLanguage();
-  const isHe              = lang === 'he';
+  const { user }                   = useAuth();
+  const { customWidgets, refresh } = useWidgetBank();
+  const { lang }                   = useLanguage();
+  const isHe                       = lang === 'he';
+  const isAdmin                    = user?.role === 'Admin';
 
   // ── Built-in widgets: grouped by category ─────────────────────────────────
   const categories = [...new Set(widgets.map(w => w.category))];
 
-  // ── Custom widgets: "approved" + "yours" ──────────────────────────────────
+  // ── Custom widgets: "approved" + "yours (non-approved)" ───────────────────
   const approvedWidgets = customWidgets.filter(w => w.status === 'approved');
+  // Exclude own widgets that are already approved — they appear in "Approved" only
   const userWidgets     = customWidgets.filter(
-    w => w.username === user?.username,
+    w => w.username === user?.username && w.status !== 'approved',
   );
+
+  // ── Admin: delete an approved widget from the bank ────────────────────────
+  async function handleAdminDelete(compositeId) {
+    const numId = String(compositeId).replace('custom_', '');
+    try {
+      await widgetApi.remove(numId, user);
+      refresh();
+    } catch (err) {
+      console.error('Failed to delete widget', err);
+    }
+  }
 
   // Build a display widget object from a DB custom widget row
   function toDisplayWidget(w) {
@@ -174,6 +229,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
                         key={w.id}
                         widget={w}
                         isOnGrid={activeWidgetIds.includes(w.id)}
+                        onDelete={isAdmin ? handleAdminDelete : undefined}
                       />
                     ))}
                   </div>

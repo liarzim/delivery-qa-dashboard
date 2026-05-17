@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   DndContext, DragOverlay, PointerSensor,
-  useSensor, useSensors, closestCorners,
+  useSensor, useSensors, closestCorners, useDroppable,
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useData } from '../context/DataContext';
@@ -49,6 +49,7 @@ export default function SubDashboardPage() {
   }, [id]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const { setNodeRef: setGridDropRef } = useDroppable({ id: 'grid-drop-zone' });
 
   // Helper: resolve a widget object (built-in or custom) by its grid ID
   const resolveWidget = (wid) => {
@@ -100,6 +101,8 @@ export default function SubDashboardPage() {
       }
       return;
     }
+    // Ignore drops onto the drop-zone sentinel (not a real widget)
+    if (over.id === 'grid-drop-zone') return;
     if (active.id !== over.id) {
       const oldIndex = gridWidgetIds.indexOf(active.id);
       const newIndex = gridWidgetIds.indexOf(over.id);
@@ -167,21 +170,23 @@ export default function SubDashboardPage() {
             }
           />
 
-          {gridWidgets.length === 0 ? (
-            <div className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center py-20 gap-3"
-              style={{ borderColor: 'rgba(120,150,255,0.2)', color: 'rgba(237,240,254,0.3)' }}>
-              <LayoutGrid size={32} />
-              <p className="text-sm">{t('overview_drop_hint')}</p>
-            </div>
-          ) : (
-            <SortableContext items={gridWidgetIds} strategy={rectSortingStrategy}>
-              <div className="grid grid-cols-3 gap-4">
-                {gridWidgets.map(widget => (
-                  <GridWidget key={widget.id} widget={widget} delivery={delivery} qa={qa} settings={settings} onRemove={removeWidget} />
-                ))}
+          <div ref={setGridDropRef}>
+            {gridWidgets.length === 0 ? (
+              <div className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center py-20 gap-3"
+                style={{ borderColor: 'rgba(120,150,255,0.2)', color: 'rgba(237,240,254,0.3)' }}>
+                <LayoutGrid size={32} />
+                <p className="text-sm">{t('overview_drop_hint')}</p>
               </div>
-            </SortableContext>
-          )}
+            ) : (
+              <SortableContext items={gridWidgetIds} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-3 gap-4">
+                  {gridWidgets.map(widget => (
+                    <GridWidget key={widget.id} widget={widget} delivery={delivery} qa={qa} settings={settings} onRemove={removeWidget} />
+                  ))}
+                </div>
+              </SortableContext>
+            )}
+          </div>
         </div>
       </div>
 

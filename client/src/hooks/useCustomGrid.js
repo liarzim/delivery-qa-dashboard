@@ -68,6 +68,8 @@ export function useCustomGrid(storageKey, lang = 'en', customWidgets = []) {
       }
       return;
     }
+    // Ignore drops onto the drop-zone sentinel (not a real widget)
+    if (over.id === 'grid-drop-zone') return;
     if (active.id !== over.id) {
       const oldIndex = gridWidgetIds.indexOf(active.id);
       const newIndex = gridWidgetIds.indexOf(over.id);
