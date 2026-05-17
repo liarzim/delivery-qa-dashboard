@@ -1,13 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import {
   DndContext, DragOverlay, PointerSensor,
-  useSensor, useSensors, closestCorners, useDroppable,
+  useSensor, useSensors, closestCorners,
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useApi } from '../hooks/useApi';
 import { store } from '../lib/store';
 import GridWidget from '../components/GridWidget';
 import WidgetBank from '../components/WidgetBank';
+import GridDropZone from '../components/GridDropZone';
 import SectionHeader from '../components/SectionHeader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SubDashboardTabs from '../components/SubDashboardTabs';
@@ -205,7 +206,6 @@ export default function MainDashboard() {
   const saveLayout = useCallback((ids) => store.set('layout', ids), []);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const { setNodeRef: setGridDropRef } = useDroppable({ id: 'grid-drop-zone' });
 
   // Helper: resolve a widget object (built-in or custom) by its grid ID
   const resolveWidget = (wid) => {
@@ -322,7 +322,7 @@ export default function MainDashboard() {
           {/* ── 3 Traffic Lights ── */}
           <OverviewTrafficLights delivery={delivery} qa={qa} settings={settings} t={t} />
 
-          <div ref={setGridDropRef}>
+          <GridDropZone>
             {gridWidgets.length === 0 ? (
               <div className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center py-20 gap-3"
                 style={{ borderColor: 'rgba(120,150,255,0.2)', color: 'rgba(237,240,254,0.3)' }}>
@@ -345,7 +345,7 @@ export default function MainDashboard() {
                 </div>
               </SortableContext>
             )}
-          </div>
+          </GridDropZone>
         </div>
       </div>
 

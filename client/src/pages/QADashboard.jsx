@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   DndContext, DragOverlay, PointerSensor,
-  useSensor, useSensors, closestCorners, useDroppable,
+  useSensor, useSensors, closestCorners,
 } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import {
@@ -18,6 +18,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import SubDashboardTabs from '../components/SubDashboardTabs';
 import WidgetBank from '../components/WidgetBank';
 import GridWidget from '../components/GridWidget';
+import GridDropZone from '../components/GridDropZone';
 import { getTrafficLight } from '../utils/thresholds';
 import { AlertCircle, ChevronDown, ChevronRight, ChevronLeft, Layers, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -60,7 +61,6 @@ export default function QADashboard() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const customGrid = useCustomGrid('custom_grid_qa', lang, customWidgets);
-  const { setNodeRef: setGridDropRef } = useDroppable({ id: 'grid-drop-zone' });
 
   if (loading) return <LoadingSpinner />;
   if (error) return (
@@ -303,7 +303,7 @@ export default function QADashboard() {
           <DashboardLayout dashboardId="qa" useLayoutHook={layoutHook} widgetMap={widgetMap} />
 
           {/* ── Custom widgets zone (droppable even when empty) ── */}
-          <div ref={setGridDropRef}>
+          <GridDropZone>
             {customGrid.gridWidgets.length > 0 && (
               <div className="mt-6">
                 <p className="text-xs font-bold uppercase tracking-widest mb-3"
@@ -334,7 +334,7 @@ export default function QADashboard() {
                 <p className="text-sm">{lang === 'he' ? 'גרור ווידג\'ט לכאן' : 'Drag a widget here to add it'}</p>
               </div>
             )}
-          </div>
+          </GridDropZone>
         </div>
       </div>
 
