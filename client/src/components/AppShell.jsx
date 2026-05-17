@@ -169,7 +169,9 @@ export default function AppShell() {
   const qaChildren          = subDashes.filter(d => d.parentId === 'qa');
 
   const handleLogout = () => { logout(); navigate('/login'); };
-  const showBankButton = location.pathname === '/' || location.pathname.startsWith('/sub/');
+  // Show bank button on all main dashboard pages (not on settings/admin/builder pages)
+  const NON_DASHBOARD_PATHS = ['/settings', '/preferences', '/widget-builder', '/system-docs', '/formula-verify', '/login'];
+  const showBankButton = !NON_DASHBOARD_PATHS.some(p => location.pathname.startsWith(p));
 
   // ── Section label used inside nav ─────────────────────────────────────────
   const SectionLabel = ({ label }) =>
@@ -278,7 +280,7 @@ export default function AppShell() {
               <NavItem to="/qa" label={t('nav_qa')} icon={Bug} collapsed={collapsed} />
             )}
 
-            {/* Widget bank toggle (Overview + sub-dash pages) */}
+            {/* Widget bank toggle — only in sidebar on overview/sub-dash pages */}
             {showBankButton && (
               <SidebarButton onClick={toggleBank} icon={Layers} label={t('overview_widgets')} collapsed={collapsed} active={bankOpen} />
             )}

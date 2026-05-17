@@ -14,23 +14,8 @@ import SectionHeader from '../components/SectionHeader';
 import SubDashboardTabs from '../components/SubDashboardTabs';
 import { useLanguage } from '../context/LanguageContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
-import { LayoutGrid, AlertCircle } from 'lucide-react';
-
-const ALL_WIDGETS = [
-  { id: 'committed-rate',    label: 'Committed Rate',      category: 'Delivery' },
-  { id: 'uncommitted-rate',  label: 'Uncommitted Rate',    category: 'Delivery' },
-  { id: 'overall-rate',      label: 'Overall Rate',        category: 'Delivery' },
-  { id: 'avg-velocity',      label: 'Avg Velocity',        category: 'Delivery' },
-  { id: 'throughput',        label: 'Throughput',          category: 'Delivery' },
-  { id: 'committed-gauge',   label: 'Committed Gauge',     category: 'Delivery' },
-  { id: 'reopen-pct',        label: 'Reopen %',            category: 'QA' },
-  { id: 'rejected-pct',      label: 'Rejected %',          category: 'QA' },
-  { id: 'escaping-pct',      label: 'Escaping %',          category: 'QA' },
-  { id: 'reopen-density',    label: 'Reopen Density',      category: 'QA' },
-  { id: 'escaping-density',  label: 'Escaping Density',    category: 'QA' },
-];
-
-const DEFAULT_LAYOUT = ['committed-rate', 'overall-rate', 'avg-velocity', 'reopen-pct', 'rejected-pct', 'escaping-pct'];
+import { LayoutGrid, AlertCircle, Layers } from 'lucide-react';
+import { ALL_WIDGETS, DEFAULT_LAYOUT } from '../constants/widgets';
 
 export default function SubDashboardPage() {
   const { id } = useParams();
@@ -38,7 +23,7 @@ export default function SubDashboardPage() {
 
   const { delivery, qa } = useData();
   const { settings } = useSettings();
-  const { isOpen: bankOpen } = useWidgetBank();
+  const { isOpen: bankOpen, toggle: toggleBank, setIsOpen: setBankOpen, customWidgets } = useWidgetBank();
   // Synchronous init from localStorage — no effect flash
   const [subDash, setSubDash] = useState(() => {
     const all = store.get('sub_dashboards', []);
@@ -65,8 +50,41 @@ export default function SubDashboardPage() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  const gridWidgets = gridWidgetIds.map(wid => ALL_WIDGETS.find(w => w.id === wid)).filter(Boolean);
-  const activeWidget = activeId ? ALL_WIDGETS.find(w => w.id === activeId || `bank-${w.id}` === activeId) : null;
+  // Helper: resolve a widget object (built-in or custom) by its grid ID
+  const resolveWidget = (wid) => {
+    const builtin = ALL_WIDGETS.find(w => w.id === wid);
+    if (builtin) {
+      return lang === 'he'
+        ? { ...builtin, label: builtin.label_he || builtin.label }
+        : builtin;
+    }
+    if (String(wid).startsWith('custom_')) {
+      const numId = String(wid).replace('custom_', '');
+      const cw    = (customWidgets || []).find(w => String(w.id) === numId);
+      if (cw) {
+        const cfg  = cw.config || {};
+        const isHe = lang === 'he';
+        return {
+          id:     wid,
+          label:  isHe && cfg.name_he ? cfg.name_he : (cw.name || 'Custom'),
+          config: cfg,
+          status: cw.status,
+        };
+      }
+      return { id: wid, label: 'Custom Widget', config: {} };
+    }
+    return null;
+  };
+
+  const gridWidgets = gridWidgetIds.map(resolveWidget).filter(Boolean);
+  const activeWidget = activeId
+    ? (() => {
+        const raw = String(activeId).startsWith('bank-')
+          ? String(activeId).replace('bank-', '')
+          : activeId;
+        return resolveWidget(raw);
+      })()
+    : null;
 
   const handleDragStart = ({ active }) => setActiveId(active.id);
 
@@ -113,9 +131,16 @@ export default function SubDashboardPage() {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">
-        <WidgetBank widgets={ALL_WIDGETS} activeWidgetIds={gridWidgetIds} isOpen={bankOpen} />
 
-        <div className="flex-1 overflow-y-auto p-6 min-w-0">
+        <WidgetBank
+          widgets={ALL_WIDGETS}
+          activeWidgetIds={gridWidgetIds}
+          isOpen={bankOpen}
+          onClose={() => setBankOpen(false)}
+          style={{ order: 2 }}
+        />
+
+        <div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>
           {/* Show sibling tabs if this sub-dash has a parent */}
           {subDash?.parentId && (() => {
             const parentRoutes = { overview: '/', delivery: '/delivery', qa: '/qa' };
@@ -128,7 +153,17 @@ export default function SubDashboardPage() {
             title={title}
             subtitle={t('overview_subtitle')}
             action={
-              <button onClick={resetLayout} className="btn-secondary text-xs py-1.5">{t('overview_reset_layout')}</button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleBank}
+                  className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
+                  style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
+                >
+                  <Layers size={13} />
+                  {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
+                </button>
+                <button onClick={resetLayout} className="btn-secondary text-xs py-1.5">{t('overview_reset_layout')}</button>
+              </div>
             }
           />
 

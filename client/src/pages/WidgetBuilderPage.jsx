@@ -12,6 +12,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useWidgetBank } from '../context/WidgetBankContext';
 import { fetchRawData, fetchSheets, widgetApi } from '../services/widgetApi';
 import { buildColumnMeta, buildChartData, applyFilters } from '../utils/widgetAggregation';
 import LivePreview from '../components/LivePreview';
@@ -60,6 +61,7 @@ const DATA_SOURCES = [
 
 const DEFAULT_CONFIG = {
   name: '',
+  name_he: '',
   chartType: 'bar',
   dataSource: 'delivery',
   sheet: '',
@@ -112,10 +114,11 @@ function Toast({ toast }) {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function WidgetBuilderPage() {
-  const { id }   = useParams();   // undefined → new widget; string → edit mode
-  const { user } = useAuth();
-  const { t }    = useLanguage();
-  const navigate = useNavigate();
+  const { id }       = useParams();   // undefined → new widget; string → edit mode
+  const { user }     = useAuth();
+  const { t }        = useLanguage();
+  const { refresh: refreshBank } = useWidgetBank();
+  const navigate     = useNavigate();
 
   const [config, setConfig]         = useState(DEFAULT_CONFIG);
   const [rawData, setRawData]       = useState([]);
@@ -191,6 +194,7 @@ export default function WidgetBuilderPage() {
         navigate(`/widget-builder/${w.id}`, { replace: true });
         showToast('Widget created');
       }
+      refreshBank(); // keep Widget Bank in sync
     } catch (e) { showToast(e.message, 'error'); }
     finally { setSaving(false); }
   };
@@ -202,6 +206,7 @@ export default function WidgetBuilderPage() {
     try {
       await widgetApi.publish(widgetId, user);
       showToast('Submitted for admin approval');
+      refreshBank(); // status changed to pending
     } catch (e) { showToast(e.message, 'error'); }
     finally { setPub(false); }
   };
@@ -245,9 +250,14 @@ export default function WidgetBuilderPage() {
         <div className="w-72 overflow-y-auto p-4 shrink-0"
           style={{ borderRight: '1px solid rgba(20,65,245,0.2)', backgroundColor: 'rgba(20,65,245,0.04)' }}>
 
-          <Row label="Widget Name">
+          <Row label="Widget Name (EN)">
             <input value={config.name} onChange={e => set({ name: e.target.value })}
-              className={inputClass} placeholder="e.g. Bug Count by PI" />
+              className={inputClass} placeholder="e.g. Bug Count by PI" dir="ltr" />
+          </Row>
+
+          <Row label="שם ווידג'ט (HE)">
+            <input value={config.name_he || ''} onChange={e => set({ name_he: e.target.value })}
+              className={inputClass} placeholder="לדוגמה: מספר באגים לפי PI" dir="rtl" />
           </Row>
 
           <Row label="Data Source">
