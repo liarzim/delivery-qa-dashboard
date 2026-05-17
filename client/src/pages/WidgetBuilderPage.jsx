@@ -20,7 +20,7 @@ import TableColumnPicker from '../components/TableColumnPicker';
 import SectionHeader from '../components/SectionHeader';
 import {
   BarChart2, TrendingUp, PieChart, Activity, Table2, SquareAsterisk,
-  Save, Globe, AlertCircle, CheckCircle2, Loader2, Pencil,
+  Save, Globe, AlertCircle, CheckCircle2, Loader2, Pencil, Gauge,
 } from 'lucide-react';
 
 // ── Chart type buttons ─────────────────────────────────────────────────────────
@@ -31,6 +31,7 @@ const CHART_TYPES = [
   { id: 'pie',   Icon: PieChart,       label: 'Pie' },
   { id: 'kpi',   Icon: SquareAsterisk, label: 'KPI' },
   { id: 'table', Icon: Table2,         label: 'Table' },
+  { id: 'gauge', Icon: Gauge,          label: 'Gauge' },
 ];
 
 const FORMULAS = [
@@ -60,6 +61,12 @@ const DEFAULT_CONFIG = {
   color: '#3F64F7',
   filters: {},
   tableColumns: [],
+  // Gauge-specific
+  gaugeYellowThreshold: '60',
+  gaugeGreenThreshold:  '80',
+  gauge2Field:          '',
+  gaugeLabel1:          '',
+  gaugeLabel2:          '',
 };
 
 // ── Small shared form row ──────────────────────────────────────────────────────
@@ -310,6 +317,55 @@ export default function WidgetBuilderPage() {
                 onChange={cols => set({ tableColumns: cols })}
               />
             </Row>
+          )}
+
+          {/* Gauge config — only for gauge chart type */}
+          {config.chartType === 'gauge' && (
+            <>
+              <div className="mb-2 px-2 py-1.5 rounded text-xs"
+                style={{ backgroundColor: 'rgba(20,65,245,0.08)', color: 'rgba(237,240,254,0.45)' }}>
+                Select a numeric Y-Axis field (e.g. a % column). The gauge shows the average value across all rows.
+              </div>
+              <Row label="Yellow threshold (%)">
+                <input
+                  type="number" min="0" max="100"
+                  value={config.gaugeYellowThreshold}
+                  onChange={e => set({ gaugeYellowThreshold: e.target.value })}
+                  className={inputClass} />
+              </Row>
+              <Row label="Green threshold (%)">
+                <input
+                  type="number" min="0" max="100"
+                  value={config.gaugeGreenThreshold}
+                  onChange={e => set({ gaugeGreenThreshold: e.target.value })}
+                  className={inputClass} />
+              </Row>
+              <Row label="Second needle (optional)">
+                <select
+                  value={config.gauge2Field}
+                  onChange={e => set({ gauge2Field: e.target.value })}
+                  className={inputClass}>
+                  <option value="">— none —</option>
+                  {numericCols.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </Row>
+              <Row label="Label 1">
+                <input
+                  value={config.gaugeLabel1}
+                  onChange={e => set({ gaugeLabel1: e.target.value })}
+                  className={inputClass}
+                  placeholder={config.yField || '% Actual'} />
+              </Row>
+              {config.gauge2Field && (
+                <Row label="Label 2">
+                  <input
+                    value={config.gaugeLabel2}
+                    onChange={e => set({ gaugeLabel2: e.target.value })}
+                    className={inputClass}
+                    placeholder={config.gauge2Field || '% Adjusted'} />
+                </Row>
+              )}
+            </>
           )}
 
           <Row label="Accent Color">

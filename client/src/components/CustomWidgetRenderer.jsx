@@ -95,7 +95,7 @@ export default function CustomWidgetRenderer({ widgetId, config, name, compact =
         </div>
       )}
       <div className={`flex-1 ${compact ? '' : 'px-2 pb-3'}`} style={{ minHeight: 0 }}>
-        <LivePreview config={config} chartData={chartData} />
+        <LivePreview config={config} chartData={chartData} rawRows={rows} />
       </div>
     </div>
   );

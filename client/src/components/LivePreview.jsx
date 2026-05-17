@@ -7,6 +7,7 @@ import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
+import SemiGaugeChart from './SemiGaugeChart';
 
 const COLORS = ['#3F64F7','#27DBE4','#54E075','#F9BD33','#FB79F3','#F36059','#FF8E21','#0D9488'];
 
@@ -89,6 +90,36 @@ export default function LivePreview({ config, chartData, rawRows = [] }) {
             Showing first 500 of {rawRows.length} rows
           </p>
         )}
+      </div>
+    );
+  }
+
+  // Gauge — single aggregated percentage value, optional second needle
+  if (type === 'gauge') {
+    const primaryVals = chartData.map(d => d.y).filter(n => isFinite(n));
+    const primaryAvg  = primaryVals.length > 0
+      ? primaryVals.reduce((s, v) => s + v, 0) / primaryVals.length
+      : 0;
+
+    let secondaryAvg = null;
+    if (config.gauge2Field && rawRows.length > 0) {
+      const vals = rawRows
+        .map(row => parseFloat(row[config.gauge2Field]))
+        .filter(n => !isNaN(n));
+      if (vals.length > 0)
+        secondaryAvg = vals.reduce((s, v) => s + v, 0) / vals.length;
+    }
+
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-4">
+        <SemiGaugeChart
+          value={primaryAvg}
+          value2={secondaryAvg}
+          yellowThreshold={Number(config.gaugeYellowThreshold ?? 60)}
+          greenThreshold={Number(config.gaugeGreenThreshold  ?? 80)}
+          label1={config.gaugeLabel1 || config.yField  || '% Actual'}
+          label2={config.gaugeLabel2 || config.gauge2Field || '% Adjusted'}
+        />
       </div>
     );
   }
