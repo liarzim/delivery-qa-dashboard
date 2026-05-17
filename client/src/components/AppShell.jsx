@@ -278,8 +278,10 @@ export default function AppShell() {
               <NavItem to="/qa" label={t('nav_qa')} icon={Bug} collapsed={collapsed} />
             )}
 
-            {/* Widget bank toggle — available on all pages */}
-            <SidebarButton onClick={toggleBank} icon={Layers} label={t('overview_widgets')} collapsed={collapsed} active={bankOpen} />
+            {/* Widget bank toggle — only in sidebar on overview/sub-dash pages */}
+            {showBankButton && (
+              <SidebarButton onClick={toggleBank} icon={Layers} label={t('overview_widgets')} collapsed={collapsed} active={bankOpen} />
+            )}
 
             {/* Widget Builder */}
             <NavItem to="/widget-builder" label={t('nav_widget_builder')} icon={Wrench} collapsed={collapsed} />
