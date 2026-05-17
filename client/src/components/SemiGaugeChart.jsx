@@ -45,13 +45,14 @@ export default function SemiGaugeChart({
 
   const f = n => n.toFixed(2);
 
-  // Filled donut-slice path for a zone
+  // Filled donut-slice path for a zone.
+  // Large-arc flag is always 0: no single zone can span more than the full
+  // 180° semicircle, so SVG should never take the "long way" around.
   const zonePath = (p1, p2) => {
     const o1 = toXY(p1, R), o2 = toXY(p2, R);
     const i2 = toXY(p2, r), i1 = toXY(p1, r);
-    const lg = (p2 - p1) > 50 ? 1 : 0;
-    return `M${f(o1.x)},${f(o1.y)} A${R},${R} 0 ${lg} 1 ${f(o2.x)},${f(o2.y)} `
-         + `L${f(i2.x)},${f(i2.y)} A${r},${r} 0 ${lg} 0 ${f(i1.x)},${f(i1.y)} Z`;
+    return `M${f(o1.x)},${f(o1.y)} A${R},${R} 0 0 1 ${f(o2.x)},${f(o2.y)} `
+         + `L${f(i2.x)},${f(i2.y)} A${r},${r} 0 0 0 ${f(i1.x)},${f(i1.y)} Z`;
   };
 
   // White tick divider between zones
