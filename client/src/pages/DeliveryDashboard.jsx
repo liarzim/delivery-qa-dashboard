@@ -1,18 +1,28 @@
 import React, { useState } from 'react';
 import {
+  DndContext, DragOverlay, PointerSensor,
+  useSensor, useSensors, closestCorners,
+} from '@dnd-kit/core';
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
+import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine, ResponsiveContainer,
 } from 'recharts';
 import { useApi } from '../hooks/useApi';
 import { useLayout } from '../hooks/useLayout';
+import { useCustomGrid } from '../hooks/useCustomGrid';
 import GaugeChart from '../components/GaugeChart';
 import KpiCard from '../components/KpiCard';
 import SectionHeader from '../components/SectionHeader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import DashboardLayout from '../components/DashboardLayout';
 import SubDashboardTabs from '../components/SubDashboardTabs';
-import { AlertCircle, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import WidgetBank from '../components/WidgetBank';
+import GridWidget from '../components/GridWidget';
+import { AlertCircle, ChevronDown, ChevronRight, ChevronLeft, Layers, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useWidgetBank } from '../context/WidgetBankContext';
+import { ALL_WIDGETS } from '../constants/widgets';
 
 const G = {
   grid:   'rgba(20,65,245,0.18)',
@@ -41,12 +51,17 @@ const WIDGETS = [
 ];
 
 export default function DeliveryDashboard() {
-  const { t, isRTL } = useLanguage();
-  const { data, loading, error } = useApi('/api/data/delivery');
-  const { data: settings } = useApi('/api/settings');
+  const { t, isRTL, lang } = useLanguage();
+  const { data, loading, error }   = useApi('/api/data/delivery');
+  const { data: qaData }           = useApi('/api/data/qa');
+  const { data: settings }         = useApi('/api/settings');
+  const { isOpen: bankOpen, toggle: toggleBank, setIsOpen: setBankOpen, customWidgets } = useWidgetBank();
   const [selectedPI, setSelectedPI] = useState(null);
-  const [drilldown, setDrilldown] = useState(null);
+  const [drilldown, setDrilldown]   = useState(null);
   const layoutHook = useLayout('delivery', WIDGETS);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const customGrid = useCustomGrid('custom_grid_delivery', lang, customWidgets);
 
   if (loading) return <LoadingSpinner />;
   if (error) return (
@@ -292,18 +307,87 @@ export default function DeliveryDashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      <SubDashboardTabs parentId="delivery" parentPath="/delivery" parentLabel={t('delivery_title')} />
-      <SectionHeader
-        title={t('delivery_title')}
-        titleKey="delivery.title"
-        subtitle={t('delivery_subtitle')}
-      />
-      <DashboardLayout
-        dashboardId="delivery"
-        useLayoutHook={layoutHook}
-        widgetMap={widgetMap}
-      />
-    </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={customGrid.handleDragStart}
+      onDragEnd={customGrid.handleDragEnd}
+    >
+      <div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">
+
+        <WidgetBank
+          widgets={ALL_WIDGETS}
+          activeWidgetIds={customGrid.gridWidgetIds}
+          isOpen={bankOpen}
+          onClose={() => setBankOpen(false)}
+          style={{ order: 2 }}
+        />
+
+        <div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>
+          <SubDashboardTabs parentId="delivery" parentPath="/delivery" parentLabel={t('delivery_title')} />
+          <SectionHeader
+            title={t('delivery_title')}
+            titleKey="delivery.title"
+            subtitle={t('delivery_subtitle')}
+            action={
+              <button
+                onClick={toggleBank}
+                className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
+                style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
+              >
+                <Layers size={13} />
+                {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
+              </button>
+            }
+          />
+          <DashboardLayout
+            dashboardId="delivery"
+            useLayoutHook={layoutHook}
+            widgetMap={widgetMap}
+          />
+
+          {/* ── Custom widgets zone ── */}
+          {customGrid.gridWidgets.length > 0 && (
+            <div className="mt-6">
+              <p className="text-xs font-bold uppercase tracking-widest mb-3"
+                style={{ color: 'rgba(237,240,254,0.35)', letterSpacing: '0.1em' }}>
+                {lang === 'he' ? 'ווידג\'טים מותאמים' : 'Custom Widgets'}
+              </p>
+              <SortableContext items={customGrid.gridWidgetIds} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-3 gap-4">
+                  {customGrid.gridWidgets.map(widget => (
+                    <GridWidget
+                      key={widget.id}
+                      widget={widget}
+                      delivery={data}
+                      qa={qaData}
+                      settings={settings}
+                      onRemove={customGrid.removeWidget}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </div>
+          )}
+
+          {bankOpen && customGrid.gridWidgets.length === 0 && (
+            <div className="mt-6 border-2 border-dashed rounded-xl flex flex-col items-center justify-center py-12 gap-3"
+              style={{ borderColor: 'rgba(120,150,255,0.2)', color: 'rgba(237,240,254,0.3)' }}>
+              <LayoutGrid size={28} />
+              <p className="text-sm">{lang === 'he' ? 'גרור ווידג\'ט לכאן' : 'Drag a widget here to add it'}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <DragOverlay>
+        {customGrid.activeWidget && (
+          <div className="px-3 py-2 rounded-lg border text-xs font-medium shadow-xl"
+            style={{ borderColor: 'var(--p-accent)', backgroundColor: 'rgba(20,65,245,0.2)', color: '#93C5FD' }}>
+            {customGrid.activeWidget.label}
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }

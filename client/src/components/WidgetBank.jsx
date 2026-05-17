@@ -73,7 +73,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
   // ── Custom widgets: "approved" + "yours" ──────────────────────────────────
   const approvedWidgets = customWidgets.filter(w => w.status === 'approved');
   const userWidgets     = customWidgets.filter(
-    w => w.created_by === user?.username,
+    w => w.username === user?.username,
   );
 
   // Build a display widget object from a DB custom widget row

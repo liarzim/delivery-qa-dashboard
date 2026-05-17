@@ -12,6 +12,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useWidgetBank } from '../context/WidgetBankContext';
 import { fetchRawData, fetchSheets, widgetApi } from '../services/widgetApi';
 import { buildColumnMeta, buildChartData, applyFilters } from '../utils/widgetAggregation';
 import LivePreview from '../components/LivePreview';
@@ -113,10 +114,11 @@ function Toast({ toast }) {
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function WidgetBuilderPage() {
-  const { id }   = useParams();   // undefined → new widget; string → edit mode
-  const { user } = useAuth();
-  const { t }    = useLanguage();
-  const navigate = useNavigate();
+  const { id }       = useParams();   // undefined → new widget; string → edit mode
+  const { user }     = useAuth();
+  const { t }        = useLanguage();
+  const { refresh: refreshBank } = useWidgetBank();
+  const navigate     = useNavigate();
 
   const [config, setConfig]         = useState(DEFAULT_CONFIG);
   const [rawData, setRawData]       = useState([]);
@@ -192,6 +194,7 @@ export default function WidgetBuilderPage() {
         navigate(`/widget-builder/${w.id}`, { replace: true });
         showToast('Widget created');
       }
+      refreshBank(); // keep Widget Bank in sync
     } catch (e) { showToast(e.message, 'error'); }
     finally { setSaving(false); }
   };
@@ -203,6 +206,7 @@ export default function WidgetBuilderPage() {
     try {
       await widgetApi.publish(widgetId, user);
       showToast('Submitted for admin approval');
+      refreshBank(); // status changed to pending
     } catch (e) { showToast(e.message, 'error'); }
     finally { setPub(false); }
   };

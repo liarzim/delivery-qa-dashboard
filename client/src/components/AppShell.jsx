@@ -169,7 +169,9 @@ export default function AppShell() {
   const qaChildren          = subDashes.filter(d => d.parentId === 'qa');
 
   const handleLogout = () => { logout(); navigate('/login'); };
-  const showBankButton = location.pathname === '/' || location.pathname.startsWith('/sub/');
+  // Show bank button on all main dashboard pages (not on settings/admin/builder pages)
+  const NON_DASHBOARD_PATHS = ['/settings', '/preferences', '/widget-builder', '/system-docs', '/formula-verify', '/login'];
+  const showBankButton = !NON_DASHBOARD_PATHS.some(p => location.pathname.startsWith(p));
 
   // ── Section label used inside nav ─────────────────────────────────────────
   const SectionLabel = ({ label }) =>
