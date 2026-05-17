@@ -19,7 +19,7 @@ import * as XLSX from 'xlsx';
 import {
   Save, RefreshCw, Plus, Trash2, AlertCircle, CheckCircle2,
   Users, Sliders, Map, LayoutDashboard, Wrench, Check, X, Languages, FolderOpen,
-  Upload, Download,
+  Upload, Download, Pencil,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 
@@ -97,6 +97,10 @@ export default function SettingsPage() {
   const [newOverrideKey, setNewOverrideKey] = useState('');
   const [newOverrideEn, setNewOverrideEn] = useState('');
   const [newOverrideHe, setNewOverrideHe] = useState('');
+  // Inline edit state for existing overrides
+  const [editingKey, setEditingKey] = useState(null);
+  const [editEn, setEditEn]         = useState('');
+  const [editHe, setEditHe]         = useState('');
 
   // ── Sync form from settings ──────────────────────────────────────────────
   useEffect(() => {
@@ -535,33 +539,122 @@ export default function SettingsPage() {
             <p className="text-sm py-3 text-center" style={{ color: 'rgba(237,240,254,0.3)' }}>
               {t('settings_titles_no_overrides')}
             </p>
-          ) : Object.entries(titleOverrides).map(([key, vals]) => (
-            <div key={key}
-              className="flex items-start gap-3 px-3 py-2.5 rounded-lg"
-              style={{ backgroundColor: 'rgba(20,65,245,0.06)', border: '1px solid rgba(20,65,245,0.15)' }}>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-mono font-semibold mb-1" style={{ color: 'var(--p-accent)' }}>{key}</p>
-                <div className="flex gap-4 flex-wrap">
-                  <span className="text-xs" style={{ color: 'rgba(237,240,254,0.55)' }}>
-                    <span className="font-semibold mr-1" style={{ color: 'rgba(237,240,254,0.3)' }}>EN:</span>{vals.en || '—'}
-                  </span>
-                  <span className="text-xs" dir="auto" style={{ color: 'rgba(237,240,254,0.55)' }}>
-                    <span className="font-semibold mr-1" style={{ color: 'rgba(237,240,254,0.3)' }}>HE:</span>{vals.he || '—'}
-                  </span>
+          ) : Object.entries(titleOverrides).map(([key, vals]) => {
+            const isEditing = editingKey === key;
+            return (
+              <div key={key}
+                className="flex items-start gap-3 px-3 py-2.5 rounded-lg"
+                style={{
+                  backgroundColor: isEditing ? 'rgba(20,65,245,0.12)' : 'rgba(20,65,245,0.06)',
+                  border: `1px solid ${isEditing ? 'rgba(20,65,245,0.4)' : 'rgba(20,65,245,0.15)'}`,
+                }}>
+                <div className="flex-1 min-w-0">
+                  {/* Key label — always visible */}
+                  <p className="text-xs font-mono font-semibold mb-1.5" style={{ color: 'var(--p-accent)' }}>{key}</p>
+
+                  {isEditing ? (
+                    /* ── Edit mode: inline inputs ── */
+                    <div className="flex gap-3 flex-wrap">
+                      <div className="flex-1 min-w-32">
+                        <label className="text-xs mb-1 block" style={{ color: 'rgba(237,240,254,0.35)' }}>EN</label>
+                        <input
+                          value={editEn}
+                          onChange={e => setEditEn(e.target.value)}
+                          placeholder={en[key] || 'English text…'}
+                          autoFocus
+                          className="sigma-input text-xs py-1.5 w-full"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-32">
+                        <label dir="auto" className="text-xs mb-1 block" style={{ color: 'rgba(237,240,254,0.35)' }}>HE</label>
+                        <input
+                          value={editHe}
+                          onChange={e => setEditHe(e.target.value)}
+                          placeholder="טקסט עברי…"
+                          dir="auto"
+                          className="sigma-input text-xs py-1.5 w-full"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── View mode: values + default ── */
+                    <>
+                      <div className="flex gap-4 flex-wrap">
+                        <span className="text-xs" style={{ color: 'rgba(237,240,254,0.55)' }}>
+                          <span className="font-semibold mr-1" style={{ color: 'rgba(237,240,254,0.3)' }}>EN:</span>{vals.en || '—'}
+                        </span>
+                        <span className="text-xs" dir="auto" style={{ color: 'rgba(237,240,254,0.55)' }}>
+                          <span className="font-semibold mr-1" style={{ color: 'rgba(237,240,254,0.3)' }}>HE:</span>{vals.he || '—'}
+                        </span>
+                      </div>
+                      <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.2)' }}>
+                        {t('settings_titles_default_en')}: {en[key] ?? key}
+                      </p>
+                    </>
+                  )}
                 </div>
-                <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.2)' }}>
-                  {t('settings_titles_default_en')}: {en[key] ?? key}
-                </p>
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                  {isEditing ? (
+                    <>
+                      {/* Save edit */}
+                      <button
+                        onClick={() => {
+                          setTitleOverride(key, editEn, editHe);
+                          setEditingKey(null);
+                          showToast(t('success_saved'));
+                        }}
+                        className="p-1.5 rounded transition-colors"
+                        style={{ color: '#54E075' }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(84,224,117,0.12)'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
+                        title="Save changes"
+                      >
+                        <Check size={14} />
+                      </button>
+                      {/* Cancel edit */}
+                      <button
+                        onClick={() => setEditingKey(null)}
+                        className="p-1.5 rounded transition-colors"
+                        style={{ color: 'rgba(237,240,254,0.35)' }}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(237,240,254,0.06)'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = ''}
+                        title="Cancel"
+                      >
+                        <X size={14} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Edit */}
+                      <button
+                        onClick={() => { setEditingKey(key); setEditEn(vals.en || ''); setEditHe(vals.he || ''); }}
+                        className="p-1.5 rounded transition-colors"
+                        style={{ color: 'rgba(237,240,254,0.25)' }}
+                        onMouseEnter={e => e.currentTarget.style.color = 'var(--p-accent)'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'rgba(237,240,254,0.25)'}
+                        title="Edit"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      {/* Delete */}
+                      <button
+                        onClick={() => { removeTitleOverride(key); showToast(t('success_saved')); }}
+                        className="p-1.5 rounded transition-colors"
+                        style={{ color: 'rgba(237,240,254,0.25)' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#F36059'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'rgba(237,240,254,0.25)'}
+                        title={t('settings_titles_remove')}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-              <button
-                onClick={() => { removeTitleOverride(key); showToast(t('success_saved')); }}
-                className="p-1.5 rounded transition-colors hover:text-sigma-red shrink-0 mt-0.5"
-                style={{ color: 'rgba(237,240,254,0.25)' }}
-                title={t('settings_titles_remove')}>
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Add new override form */}
