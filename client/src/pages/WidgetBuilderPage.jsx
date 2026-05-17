@@ -77,12 +77,13 @@ const DEFAULT_CONFIG = {
   gaugeLabel1:          '',
   gaugeLabel2:          '',
   // Conditional % formula
-  countifField:  '',
-  countifOp:     'eq',
-  countifValue:  '',
-  denomField:    '',
-  denomOp:       'eq',
-  denomValue:    '',
+  countifField:    '',
+  countifOp:       'eq',
+  countifValue:    '',
+  denomMode:       'total',   // 'total' | 'condition'
+  denomField:      '',
+  denomOp:         'eq',
+  denomValue:      '',
 };
 
 // ── Small shared form row ──────────────────────────────────────────────────────
@@ -314,13 +315,14 @@ export default function WidgetBuilderPage() {
                 </select>
               </Row>
               <Row label="Value">
-                {/* If column has known text options, show a datalist */}
+                {/* datalist gives autocomplete from known column values (works for Hebrew too) */}
                 <input
                   list="countif-values"
                   value={config.countifValue}
                   onChange={e => set({ countifValue: e.target.value })}
                   className={inputClass}
-                  placeholder='e.g. Done  (comma-separate for OR)'
+                  dir="auto"
+                  placeholder='e.g. בוצע  (comma for OR: בוצע, סגור)'
                   spellCheck={false}
                 />
                 {config.countifField && columnMeta[config.countifField]?.options?.length > 0 && (
@@ -331,7 +333,7 @@ export default function WidgetBuilderPage() {
                   </datalist>
                 )}
                 <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.25)' }}>
-                  Separate multiple values with commas for OR logic
+                  Comma-separated = OR logic
                 </p>
               </Row>
 
@@ -342,14 +344,14 @@ export default function WidgetBuilderPage() {
               </div>
               <Row label="Denominator type">
                 <select
-                  value={config.denomField ? 'condition' : 'total'}
-                  onChange={e => set({ denomField: e.target.value === 'total' ? '' : config.denomField })}
+                  value={config.denomMode || 'total'}
+                  onChange={e => set({ denomMode: e.target.value, denomField: '', denomValue: '' })}
                   className={inputClass}>
                   <option value="total">All rows in group</option>
                   <option value="condition">Rows matching another condition</option>
                 </select>
               </Row>
-              {config.denomField !== '' && (
+              {config.denomMode === 'condition' && (
                 <>
                   <Row label="Column">
                     <select value={config.denomField}
@@ -372,7 +374,8 @@ export default function WidgetBuilderPage() {
                       value={config.denomValue}
                       onChange={e => set({ denomValue: e.target.value })}
                       className={inputClass}
-                      placeholder="e.g. Active"
+                      dir="auto"
+                      placeholder="e.g. פעיל"
                       spellCheck={false}
                     />
                     {config.denomField && columnMeta[config.denomField]?.options?.length > 0 && (
@@ -394,11 +397,15 @@ export default function WidgetBuilderPage() {
                 value={config.customFormula}
                 onChange={e => set({ customFormula: e.target.value })}
                 className={inputClass}
-                placeholder='e.g. COUNTIF(Status,"Done") / COUNT(*) * 100'
+                dir="ltr"
+                placeholder='e.g. COUNTIF(סטטוס,"בוצע") / COUNT(*) * 100'
                 spellCheck={false}
               />
               <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.3)' }}>
                 Functions: COUNT(*), COUNTIF(col,"val"), SUM(col), AVG(col), MIN(col), MAX(col)
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'rgba(237,240,254,0.2)' }}>
+                Hebrew column names and values are supported
               </p>
             </Row>
           )}
