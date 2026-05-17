@@ -15,9 +15,11 @@ import SectionHeader from '../components/SectionHeader';
 import { widgetApi } from '../services/widgetApi';
 import IconPicker, { resolveIcon } from '../components/IconPicker';
 import en from '../i18n/en';
+import * as XLSX from 'xlsx';
 import {
   Save, RefreshCw, Plus, Trash2, AlertCircle, CheckCircle2,
   Users, Sliders, Map, LayoutDashboard, Wrench, Check, X, Languages, FolderOpen,
+  Upload, Download,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 
@@ -82,9 +84,10 @@ export default function SettingsPage() {
   const { getAll, addUser, removeUser, user } = useAuth();
   const { clearData } = useData();
 
-  const [form, setForm]         = useState({ ...settings });
-  const [piMapText, setPiMapText] = useState('{}');
-  const [toast, setToast]       = useState(null);
+  const [form, setForm]   = useState({ ...settings });
+  // piRows: [{raw: string, display: string}]
+  const [piRows, setPiRows] = useState([]);
+  const [toast, setToast] = useState(null);
   const [users, setUsers]       = useState([]);
   const [newUser, setNewUser]   = useState({ username: '', password: '', role: 'Management' });
   const [subDashes, setSubDashes] = useState([]);
@@ -98,8 +101,12 @@ export default function SettingsPage() {
   // ── Sync form from settings ──────────────────────────────────────────────
   useEffect(() => {
     setForm({ ...settings });
-    try { setPiMapText(JSON.stringify(JSON.parse(settings.pi_name_map || '{}'), null, 2)); }
-    catch { setPiMapText('{}'); }
+    try {
+      const obj = JSON.parse(settings.pi_name_map || '{}');
+      setPiRows(Object.entries(obj).map(([raw, display]) => ({ raw, display })));
+    } catch {
+      setPiRows([]);
+    }
   }, [settings]);
 
   // ── Load users & sub-dashboards ──────────────────────────────────────────
@@ -140,11 +147,76 @@ export default function SettingsPage() {
 
   // ── Save settings ────────────────────────────────────────────────────────
   const save = () => {
-    let piMap = {};
-    try { piMap = JSON.parse(piMapText); }
-    catch { showToast(t('error_invalid_json'), 'error'); return; }
+    // Build JSON object from table rows; skip blank rows
+    const piMap = {};
+    for (const { raw, display } of piRows) {
+      const k = raw.trim();
+      if (k) piMap[k] = display.trim();
+    }
     updateSettings({ ...form, pi_name_map: JSON.stringify(piMap) });
     showToast(t('success_saved'));
+  };
+
+  // ── PI row helpers ────────────────────────────────────────────────────────
+  const addPiRow = () => setPiRows(r => [...r, { raw: '', display: '' }]);
+
+  const updatePiRow = (i, field, value) =>
+    setPiRows(r => r.map((row, idx) => idx === i ? { ...row, [field]: value } : row));
+
+  const deletePiRow = (i) =>
+    setPiRows(r => r.filter((_, idx) => idx !== i));
+
+  // Detect duplicate raw names for inline warning
+  const rawCounts = piRows.reduce((acc, { raw }) => {
+    const k = raw.trim();
+    if (k) acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {});
+
+  // ── PI CSV/XLSX upload ────────────────────────────────────────────────────
+  const handlePiUpload = async (file) => {
+    if (!file) return;
+    try {
+      let rows = [];
+      const ext = file.name.split('.').pop().toLowerCase();
+
+      if (ext === 'csv') {
+        const text = await file.text();
+        rows = text.split(/\r?\n/).map(line => line.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+      } else {
+        const buf = await file.arrayBuffer();
+        const wb  = XLSX.read(new Uint8Array(buf), { type: 'array' });
+        const ws  = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      }
+
+      // Skip header row (row 0), build piRows
+      const parsed = rows
+        .slice(1)
+        .map(r => ({ raw: String(r[0] ?? '').trim(), display: String(r[1] ?? '').trim() }))
+        .filter(({ raw }) => raw !== '');
+
+      if (parsed.length === 0) {
+        showToast('No valid rows found in file', 'error');
+        return;
+      }
+      setPiRows(parsed);
+      showToast(`Loaded ${parsed.length} mapping${parsed.length !== 1 ? 's' : ''}`);
+    } catch (e) {
+      showToast(`Upload failed: ${e.message}`, 'error');
+    }
+  };
+
+  // ── Download CSV template ─────────────────────────────────────────────────
+  const downloadTemplate = () => {
+    const csv = 'raw_pi_name,display_name\nPI 2024.1,Q1 2024\nPI 2024.2,Q2 2024\n';
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'pi_mapping_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // ── User management ───────────────────────────────────────────────────────
@@ -322,13 +394,131 @@ export default function SettingsPage() {
 
       {/* PI Name Map */}
       <div style={cardStyle}>
-        <div className="flex items-center gap-2 mb-4">
-          <Map size={15} style={{ color: 'var(--p-accent)' }} />
-          <h3 style={sectionTitleStyle}>{t('settings_pi_name_map')}</h3>
+        {/* Header */}
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            <Map size={15} style={{ color: 'var(--p-accent)' }} />
+            <h3 style={sectionTitleStyle}>{t('settings_pi_name_map')}</h3>
+          </div>
+          {/* Action buttons */}
+          <div className="flex items-center gap-2">
+            {/* Download template */}
+            <button
+              onClick={downloadTemplate}
+              className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
+              title="Download CSV template"
+            >
+              <Download size={12} /> Template
+            </button>
+
+            {/* Upload CSV / XLSX */}
+            <label className="flex items-center gap-1.5 btn-secondary text-xs py-1.5 cursor-pointer">
+              <Upload size={12} /> Upload CSV / XLSX
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls,.xlsm"
+                className="hidden"
+                onChange={e => { handlePiUpload(e.target.files[0]); e.target.value = ''; }}
+              />
+            </label>
+
+            {/* Add row */}
+            <button
+              onClick={addPiRow}
+              className="flex items-center gap-1.5 btn-primary text-xs py-1.5"
+            >
+              <Plus size={12} /> Add Row
+            </button>
+          </div>
         </div>
-        <SettingRow label="Name Map (JSON)" description={t('settings_pi_name_map_desc')}>
-          <textarea value={piMapText} onChange={e => setPiMapText(e.target.value)} rows={5} className="sigma-input font-mono resize-y" />
-        </SettingRow>
+
+        <p className="text-xs mb-4" style={{ color: 'rgba(237,240,254,0.4)' }}>
+          {t('settings_pi_name_map_desc')}
+        </p>
+
+        {/* Table */}
+        {piRows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 rounded-xl"
+            style={{ border: '2px dashed rgba(20,65,245,0.2)', color: 'rgba(237,240,254,0.3)' }}>
+            <Map size={24} className="mb-2 opacity-40" />
+            <p className="text-sm">No mappings — PI names shown as-is</p>
+            <p className="text-xs mt-1 opacity-70">Click "Add Row" or upload a CSV / XLSX file</p>
+          </div>
+        ) : (
+          <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(20,65,245,0.2)' }}>
+            {/* Table header */}
+            <div className="grid grid-cols-[1fr_1fr_2.5rem] text-xs font-bold uppercase tracking-wider px-3 py-2"
+              style={{ backgroundColor: 'rgba(20,65,245,0.1)', color: 'rgba(237,240,254,0.45)', borderBottom: '1px solid rgba(20,65,245,0.2)', letterSpacing: '0.07em' }}>
+              <span>Raw PI Name (from file)</span>
+              <span>Display Name</span>
+              <span />
+            </div>
+
+            {/* Rows */}
+            <div className="divide-y" style={{ '--tw-divide-opacity': 1 }}>
+              {piRows.map(({ raw, display }, i) => {
+                const isDupe = raw.trim() && rawCounts[raw.trim()] > 1;
+                return (
+                  <div
+                    key={i}
+                    className="grid grid-cols-[1fr_1fr_2.5rem] items-center gap-2 px-3 py-2"
+                    style={{ borderBottom: '1px solid rgba(20,65,245,0.1)', backgroundColor: isDupe ? 'rgba(249,189,51,0.04)' : undefined }}
+                  >
+                    {/* Raw name */}
+                    <div className="relative">
+                      <input
+                        value={raw}
+                        onChange={e => updatePiRow(i, 'raw', e.target.value)}
+                        placeholder="e.g. PI 2024.1"
+                        dir="ltr"
+                        className="sigma-input text-xs py-1.5 w-full"
+                        style={isDupe ? { borderColor: 'rgba(249,189,51,0.5)' } : undefined}
+                      />
+                      {isDupe && (
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs"
+                          style={{ color: '#F9BD33' }} title="Duplicate raw name">
+                          <AlertCircle size={12} />
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Display name */}
+                    <input
+                      value={display}
+                      onChange={e => updatePiRow(i, 'display', e.target.value)}
+                      placeholder="e.g. Q1 2024"
+                      dir="auto"
+                      className="sigma-input text-xs py-1.5 w-full"
+                    />
+
+                    {/* Delete */}
+                    <button
+                      onClick={() => deletePiRow(i)}
+                      className="flex items-center justify-center w-7 h-7 rounded-lg transition-colors"
+                      style={{ color: 'rgba(237,240,254,0.25)' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#F36059'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'rgba(237,240,254,0.25)'}
+                      title="Remove row"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer: row count */}
+            <div className="px-3 py-2 text-xs flex items-center justify-between"
+              style={{ backgroundColor: 'rgba(20,65,245,0.05)', borderTop: '1px solid rgba(20,65,245,0.15)', color: 'rgba(237,240,254,0.3)' }}>
+              <span>{piRows.filter(r => r.raw.trim()).length} mapping{piRows.filter(r => r.raw.trim()).length !== 1 ? 's' : ''}</span>
+              {Object.values(rawCounts).some(c => c > 1) && (
+                <span className="flex items-center gap-1" style={{ color: '#F9BD33' }}>
+                  <AlertCircle size={11} /> Duplicate raw names detected — only the last will be used
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Titles & Localization */}
