@@ -85,41 +85,79 @@ export function applyFilters(rows, filters = {}) {
   );
 }
 
+// ── Unicode helpers (Hebrew-safe) ────────────────────────────────────────────
+// Normalize to NFC and strip surrounding whitespace + invisible Unicode marks.
+// Hebrew text from Excel and from keyboard input can differ in normalization,
+// so we always compare NFC-normalized strings.
+const norm  = s => String(s ?? '').normalize('NFC').trim();
+const normL = s => norm(s).toLowerCase(); // toLowerCase is a no-op for Hebrew
+
+// Resolve a column name from an expression against actual row keys.
+// Handles the case where the Excel-exported column name and the user-typed
+// name have different Unicode normalization (e.g. NFC vs NFD for Hebrew).
+function resolveField(rows, fieldExpr) {
+  const target = norm(fieldExpr);
+  if (!rows.length) return target;
+  // Fast path: exact match
+  if (target in rows[0]) return target;
+  // Slow path: find a key that normalizes to the same string
+  const match = Object.keys(rows[0]).find(k => norm(k) === target);
+  return match ?? target;
+}
+
 // ── Safe custom formula evaluator ────────────────────────────────────────────
-// Supports: COUNT(*), SUM(field), AVG(field), AVERAGE(field), MIN(field), MAX(field)
-// plus numeric literals and operators + - * / ( )
+// Supports:
+//   COUNT(*)               – row count in group
+//   COUNTIF(col,"val")     – rows where col equals val (Hebrew-safe)
+//   COUNTIF(col,"*val*")   – rows where col contains val (wrap with *)
+//   SUM(col), AVG(col), AVERAGE(col), MIN(col), MAX(col)
+//   Numeric literals and operators: + - * / ( )
+//
+// Column names and values may be in Hebrew or any Unicode script.
 export function evaluateCustomFormula(groupRows, expression) {
   if (!expression?.trim()) return 0;
   try {
     let expr = expression
+      // COUNTIF(field, "value") — exact or wildcard (*val*) match
+      .replace(/COUNTIF\s*\(\s*([^,]+?)\s*,\s*["']?([^"')]+?)["']?\s*\)/gi, (_, field, val) => {
+        const key      = resolveField(groupRows, field);
+        const valNorm  = norm(val);
+        const wildcard = valNorm.startsWith('*') && valNorm.endsWith('*');
+        const inner    = wildcard ? normL(valNorm.slice(1, -1)) : normL(valNorm);
+        return groupRows.filter(r => {
+          const cell = normL(r[key]);
+          return wildcard ? cell.includes(inner) : cell === inner;
+        }).length;
+      })
       // COUNT(*) or COUNT(anything)
       .replace(/COUNT\s*\([^)]*\)/gi, () => groupRows.length)
       // SUM(field)
       .replace(/SUM\s*\(([^)]+)\)/gi, (_, field) => {
-        field = field.trim();
-        const nums = groupRows.map(r => parseFloat(r[field])).filter(v => !isNaN(v));
+        const key  = resolveField(groupRows, field);
+        const nums = groupRows.map(r => parseFloat(r[key])).filter(v => !isNaN(v));
         return nums.reduce((a, b) => a + b, 0);
       })
       // AVG / AVERAGE(field)
       .replace(/(?:AVG|AVERAGE)\s*\(([^)]+)\)/gi, (_, field) => {
-        field = field.trim();
-        const nums = groupRows.map(r => parseFloat(r[field])).filter(v => !isNaN(v));
+        const key  = resolveField(groupRows, field);
+        const nums = groupRows.map(r => parseFloat(r[key])).filter(v => !isNaN(v));
         return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
       })
       // MIN(field)
       .replace(/MIN\s*\(([^)]+)\)/gi, (_, field) => {
-        field = field.trim();
-        const nums = groupRows.map(r => parseFloat(r[field])).filter(v => !isNaN(v));
+        const key  = resolveField(groupRows, field);
+        const nums = groupRows.map(r => parseFloat(r[key])).filter(v => !isNaN(v));
         return nums.length ? Math.min(...nums) : 0;
       })
       // MAX(field)
       .replace(/MAX\s*\(([^)]+)\)/gi, (_, field) => {
-        field = field.trim();
-        const nums = groupRows.map(r => parseFloat(r[field])).filter(v => !isNaN(v));
+        const key  = resolveField(groupRows, field);
+        const nums = groupRows.map(r => parseFloat(r[key])).filter(v => !isNaN(v));
         return nums.length ? Math.max(...nums) : 0;
       });
 
-    // After substitution only digits, operators, dots, spaces, parens are allowed
+    // After all substitutions the expression must only contain safe math tokens.
+    // Hebrew/non-ASCII that wasn't substituted (unknown function/column) aborts.
     if (!/^[\d\s+\-*/.()]+$/.test(expr)) return 0;
     // eslint-disable-next-line no-new-func
     const result = new Function(`return (${expr})`)();
@@ -129,9 +167,44 @@ export function evaluateCustomFormula(groupRows, expression) {
   }
 }
 
+// ── Test a single row against a countif_ratio condition ──────────────────────
+function rowMatchesCondition(row, field, op, value) {
+  if (!field) return false;
+  const key  = resolveField([row], field);
+  const cell = normL(row[key]);
+  // Support comma-separated OR values: "Done, Closed" / "בוצע, סגור"
+  const targets = norm(value).split(',').map(normL).filter(Boolean);
+  if (!targets.length) return false;
+  return targets.some(target => {
+    switch (op) {
+      case 'contains':     return cell.includes(target);
+      case 'not_eq':       return cell !== target;
+      case 'not_contains': return !cell.includes(target);
+      case 'starts_with':  return cell.startsWith(target);
+      default:             return cell === target;   // 'eq'
+    }
+  });
+}
+
 // ── Aggregate rows by xField, applying formula to yField ─────────────────────
-export function aggregateData(rows, xField, yField, formula = 'count', customFormula = '') {
-  if (!rows.length || !xField) return [];
+// extraConfig carries countif_ratio fields: countifField, countifOp, countifValue,
+// denomField, denomOp, denomValue
+export function aggregateData(rows, xField, yField, formula = 'count', customFormula = '', extraConfig = {}) {
+  if (!rows.length) return [];
+
+  // countif_ratio with no xField → single global percentage (useful for Gauge)
+  if (formula === 'countif_ratio' && !xField) {
+    const { countifField, countifOp = 'eq', countifValue = '',
+            denomMode = 'total', denomField, denomOp = 'eq', denomValue } = extraConfig;
+    const numRows  = rows.filter(r => rowMatchesCondition(r, countifField, countifOp, countifValue));
+    const denomRows = (denomMode === 'condition' && denomField)
+      ? rows.filter(r => rowMatchesCondition(r, denomField, denomOp, denomValue))
+      : rows;
+    const pct = denomRows.length > 0 ? (numRows.length / denomRows.length) * 100 : 0;
+    return [{ x: 'Total', y: Math.round(pct * 100) / 100, count: rows.length }];
+  }
+
+  if (!xField) return [];
 
   const groups = new Map();
   for (const row of rows) {
@@ -145,6 +218,15 @@ export function aggregateData(rows, xField, yField, formula = 'count', customFor
     let value = 0;
     if (formula === 'custom') {
       value = evaluateCustomFormula(groupRows, customFormula);
+    } else if (formula === 'countif_ratio') {
+      // Count matching rows ÷ denominator rows × 100
+      const { countifField, countifOp = 'eq', countifValue = '',
+              denomMode = 'total', denomField, denomOp = 'eq', denomValue } = extraConfig;
+      const numRows   = groupRows.filter(r => rowMatchesCondition(r, countifField, countifOp, countifValue));
+      const denomRows = (denomMode === 'condition' && denomField)
+        ? groupRows.filter(r => rowMatchesCondition(r, denomField, denomOp, denomValue))
+        : groupRows;
+      value = denomRows.length > 0 ? (numRows.length / denomRows.length) * 100 : 0;
     } else if (formula === 'count') {
       value = groupRows.length;
     } else {
@@ -169,8 +251,11 @@ export function aggregateData(rows, xField, yField, formula = 'count', customFor
 // ── Top-level helper: filter + aggregate from a config object ─────────────────
 export function buildChartData(rows, config) {
   const filtered = applyFilters(rows, config.filters || {});
-  if (!config.xField) return [];
-  return aggregateData(filtered, config.xField, config.yField, config.formula, config.customFormula || '');
+  const xField   = config.chartType === 'gauge' && config.formula === 'countif_ratio'
+    ? ''           // gauge + countif_ratio → single global value, no grouping
+    : config.xField;
+  if (!xField && config.formula !== 'countif_ratio') return [];
+  return aggregateData(filtered, xField, config.yField, config.formula, config.customFormula || '', config);
 }
 
 // ── Unique text values for a column (for filter dropdown) ────────────────────

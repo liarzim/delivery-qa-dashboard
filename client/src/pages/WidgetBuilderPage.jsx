@@ -20,7 +20,7 @@ import TableColumnPicker from '../components/TableColumnPicker';
 import SectionHeader from '../components/SectionHeader';
 import {
   BarChart2, TrendingUp, PieChart, Activity, Table2, SquareAsterisk,
-  Save, Globe, AlertCircle, CheckCircle2, Loader2, Pencil,
+  Save, Globe, AlertCircle, CheckCircle2, Loader2, Pencil, Gauge,
 } from 'lucide-react';
 
 // ── Chart type buttons ─────────────────────────────────────────────────────────
@@ -31,15 +31,25 @@ const CHART_TYPES = [
   { id: 'pie',   Icon: PieChart,       label: 'Pie' },
   { id: 'kpi',   Icon: SquareAsterisk, label: 'KPI' },
   { id: 'table', Icon: Table2,         label: 'Table' },
+  { id: 'gauge', Icon: Gauge,          label: 'Gauge' },
 ];
 
 const FORMULAS = [
-  { id: 'count',   label: 'Count' },
-  { id: 'sum',     label: 'Sum' },
-  { id: 'average', label: 'Average' },
-  { id: 'min',     label: 'Min' },
-  { id: 'max',     label: 'Max' },
-  { id: 'custom',  label: 'Custom…' },
+  { id: 'count',         label: 'Count' },
+  { id: 'sum',           label: 'Sum' },
+  { id: 'average',       label: 'Average' },
+  { id: 'min',           label: 'Min' },
+  { id: 'max',           label: 'Max' },
+  { id: 'countif_ratio', label: 'Conditional %' },
+  { id: 'custom',        label: 'Custom…' },
+];
+
+const COUNTIF_OPS = [
+  { id: 'eq',           label: 'equals' },
+  { id: 'not_eq',       label: 'not equals' },
+  { id: 'contains',     label: 'contains' },
+  { id: 'not_contains', label: 'does not contain' },
+  { id: 'starts_with',  label: 'starts with' },
 ];
 
 const DATA_SOURCES = [
@@ -60,6 +70,20 @@ const DEFAULT_CONFIG = {
   color: '#3F64F7',
   filters: {},
   tableColumns: [],
+  // Gauge-specific
+  gaugeYellowThreshold: '60',
+  gaugeGreenThreshold:  '80',
+  gauge2Field:          '',
+  gaugeLabel1:          '',
+  gaugeLabel2:          '',
+  // Conditional % formula
+  countifField:    '',
+  countifOp:       'eq',
+  countifValue:    '',
+  denomMode:       'total',   // 'total' | 'condition'
+  denomField:      '',
+  denomOp:         'eq',
+  denomValue:      '',
 };
 
 // ── Small shared form row ──────────────────────────────────────────────────────
@@ -215,7 +239,7 @@ export default function WidgetBuilderPage() {
       </div>
 
       {/* ── Top panel: Config + Preview ────────────────────────────────────── */}
-      <div className="flex shrink-0" style={{ height: '52vh', borderBottom: '1px solid rgba(20,65,245,0.2)' }}>
+      <div className="flex shrink-0" style={{ height: '62vh', borderBottom: '1px solid rgba(20,65,245,0.2)' }}>
 
         {/* Config panel */}
         <div className="w-72 overflow-y-auto p-4 shrink-0"
@@ -259,33 +283,113 @@ export default function WidgetBuilderPage() {
             </div>
           </Row>
 
-          <Row label="X-Axis (Group by)">
-            {dataLoading ? (
-              <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(237,240,254,0.4)' }}>
-                <Loader2 size={12} className="animate-spin" /> Loading columns…
-              </div>
-            ) : (
-              <select value={config.xField} onChange={e => set({ xField: e.target.value })} className={inputClass}>
-                <option value="">— select column —</option>
-                {columns.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            )}
-          </Row>
-
-          <Row label="Y-Axis (Measure)">
-            <select value={config.yField} onChange={e => set({ yField: e.target.value })} className={inputClass}
-              disabled={config.formula === 'count'}>
-              <option value="">{config.formula === 'count' ? '(row count)' : '— select column —'}</option>
-              {numericCols.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Row>
-
-          <Row label="Aggregation Formula">
+          {/* ── Formula — moved up so it's always visible ──────────────── */}
+          <Row label="Formula">
             <select value={config.formula} onChange={e => set({ formula: e.target.value, yField: e.target.value === 'count' ? '' : config.yField })}
               className={inputClass}>
               {FORMULAS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
             </select>
           </Row>
+
+          {/* ── Conditional % formula builder ──────────────────────────── */}
+          {config.formula === 'countif_ratio' && (
+            <>
+              {/* Numerator */}
+              <div className="mb-2 px-2 py-1.5 rounded text-xs font-semibold"
+                style={{ backgroundColor: 'rgba(20,65,245,0.1)', color: 'rgba(237,240,254,0.5)' }}>
+                Numerator — count rows where…
+              </div>
+              <Row label="Column">
+                <select value={config.countifField}
+                  onChange={e => set({ countifField: e.target.value, countifValue: '' })}
+                  className={inputClass}>
+                  <option value="">— select column —</option>
+                  {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </Row>
+              <Row label="Condition">
+                <select value={config.countifOp}
+                  onChange={e => set({ countifOp: e.target.value })}
+                  className={inputClass}>
+                  {COUNTIF_OPS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                </select>
+              </Row>
+              <Row label="Value">
+                {/* datalist gives autocomplete from known column values (works for Hebrew too) */}
+                <input
+                  list="countif-values"
+                  value={config.countifValue}
+                  onChange={e => set({ countifValue: e.target.value })}
+                  className={inputClass}
+                  dir="auto"
+                  placeholder='e.g. בוצע  (comma for OR: בוצע, סגור)'
+                  spellCheck={false}
+                />
+                {config.countifField && columnMeta[config.countifField]?.options?.length > 0 && (
+                  <datalist id="countif-values">
+                    {columnMeta[config.countifField].options.map(v => (
+                      <option key={v} value={v} />
+                    ))}
+                  </datalist>
+                )}
+                <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.25)' }}>
+                  Comma-separated = OR logic
+                </p>
+              </Row>
+
+              {/* Denominator */}
+              <div className="mb-2 px-2 py-1.5 rounded text-xs font-semibold mt-1"
+                style={{ backgroundColor: 'rgba(20,65,245,0.1)', color: 'rgba(237,240,254,0.5)' }}>
+                Denominator — divide by…
+              </div>
+              <Row label="Denominator type">
+                <select
+                  value={config.denomMode || 'total'}
+                  onChange={e => set({ denomMode: e.target.value, denomField: '', denomValue: '' })}
+                  className={inputClass}>
+                  <option value="total">All rows in group</option>
+                  <option value="condition">Rows matching another condition</option>
+                </select>
+              </Row>
+              {config.denomMode === 'condition' && (
+                <>
+                  <Row label="Column">
+                    <select value={config.denomField}
+                      onChange={e => set({ denomField: e.target.value, denomValue: '' })}
+                      className={inputClass}>
+                      <option value="">— select column —</option>
+                      {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </Row>
+                  <Row label="Condition">
+                    <select value={config.denomOp}
+                      onChange={e => set({ denomOp: e.target.value })}
+                      className={inputClass}>
+                      {COUNTIF_OPS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                    </select>
+                  </Row>
+                  <Row label="Value">
+                    <input
+                      list="denom-values"
+                      value={config.denomValue}
+                      onChange={e => set({ denomValue: e.target.value })}
+                      className={inputClass}
+                      dir="auto"
+                      placeholder="e.g. פעיל"
+                      spellCheck={false}
+                    />
+                    {config.denomField && columnMeta[config.denomField]?.options?.length > 0 && (
+                      <datalist id="denom-values">
+                        {columnMeta[config.denomField].options.map(v => (
+                          <option key={v} value={v} />
+                        ))}
+                      </datalist>
+                    )}
+                  </Row>
+                </>
+              )}
+            </>
+          )}
 
           {config.formula === 'custom' && (
             <Row label="Expression">
@@ -293,11 +397,15 @@ export default function WidgetBuilderPage() {
                 value={config.customFormula}
                 onChange={e => set({ customFormula: e.target.value })}
                 className={inputClass}
-                placeholder="e.g. SUM(bugs) / COUNT(*) * 100"
+                dir="ltr"
+                placeholder='e.g. COUNTIF(סטטוס,"בוצע") / COUNT(*) * 100'
                 spellCheck={false}
               />
               <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.3)' }}>
-                Tokens: COUNT(*), SUM(col), AVG(col), MIN(col), MAX(col)
+                Functions: COUNT(*), COUNTIF(col,"val"), SUM(col), AVG(col), MIN(col), MAX(col)
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'rgba(237,240,254,0.2)' }}>
+                Hebrew column names and values are supported
               </p>
             </Row>
           )}
@@ -309,6 +417,99 @@ export default function WidgetBuilderPage() {
                 columns={effectiveTableColumns}
                 onChange={cols => set({ tableColumns: cols })}
               />
+            </Row>
+          )}
+
+          {/* Gauge config — only for gauge chart type */}
+          {config.chartType === 'gauge' && (
+            <>
+              <div className="mb-2 px-2 py-1.5 rounded text-xs"
+                style={{ backgroundColor: 'rgba(20,65,245,0.08)', color: 'rgba(237,240,254,0.45)' }}>
+                Select a numeric Y-Axis field (e.g. a % column). The gauge shows the average value across all rows.
+              </div>
+              <Row label="Yellow threshold (%)">
+                <input
+                  type="number" min="0" max="100"
+                  value={config.gaugeYellowThreshold}
+                  onChange={e => set({ gaugeYellowThreshold: e.target.value })}
+                  className={inputClass} />
+              </Row>
+              <Row label="Green threshold (%)">
+                <input
+                  type="number" min="0" max="100"
+                  value={config.gaugeGreenThreshold}
+                  onChange={e => set({ gaugeGreenThreshold: e.target.value })}
+                  className={inputClass} />
+              </Row>
+              <Row label="Second needle (optional)">
+                <select
+                  value={config.gauge2Field}
+                  onChange={e => set({ gauge2Field: e.target.value })}
+                  className={inputClass}>
+                  <option value="">— none —</option>
+                  {numericCols.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </Row>
+              <Row label="Label 1">
+                <input
+                  value={config.gaugeLabel1}
+                  onChange={e => set({ gaugeLabel1: e.target.value })}
+                  className={inputClass}
+                  placeholder={config.yField || '% Actual'} />
+              </Row>
+              {config.gauge2Field && (
+                <Row label="Label 2">
+                  <input
+                    value={config.gaugeLabel2}
+                    onChange={e => set({ gaugeLabel2: e.target.value })}
+                    className={inputClass}
+                    placeholder={config.gauge2Field || '% Adjusted'} />
+                </Row>
+              )}
+            </>
+          )}
+
+          {/* X / Y axis — shown below formula so context is clear */}
+          {config.formula !== 'countif_ratio' && (
+            <>
+              <Row label="X-Axis (Group by)">
+                {dataLoading ? (
+                  <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(237,240,254,0.4)' }}>
+                    <Loader2 size={12} className="animate-spin" /> Loading columns…
+                  </div>
+                ) : (
+                  <select value={config.xField} onChange={e => set({ xField: e.target.value })} className={inputClass}>
+                    <option value="">— select column —</option>
+                    {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                )}
+              </Row>
+              <Row label="Y-Axis (Measure)">
+                <select value={config.yField} onChange={e => set({ yField: e.target.value })} className={inputClass}
+                  disabled={config.formula === 'count'}>
+                  <option value="">{config.formula === 'count' ? '(row count)' : '— select column —'}</option>
+                  {numericCols.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </Row>
+            </>
+          )}
+          {config.formula === 'countif_ratio' && (
+            <Row label="X-Axis (Group by)">
+              {dataLoading ? (
+                <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(237,240,254,0.4)' }}>
+                  <Loader2 size={12} className="animate-spin" /> Loading columns…
+                </div>
+              ) : (
+                <>
+                  <select value={config.xField} onChange={e => set({ xField: e.target.value })} className={inputClass}>
+                    <option value="">— no grouping (single total) —</option>
+                    {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <p className="text-xs mt-1" style={{ color: 'rgba(237,240,254,0.25)' }}>
+                    Leave blank for one overall % (ideal for Gauge)
+                  </p>
+                </>
+              )}
             </Row>
           )}
 
