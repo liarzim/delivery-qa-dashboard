@@ -21,7 +21,7 @@ import {
   Users, Sliders, Map, LayoutDashboard, Wrench, Check, X, Languages, FolderOpen,
   Upload, Download, Pencil,
 } from 'lucide-react';
-import { apiFetch } from '../lib/api';
+import { apiFetch, getToken } from '../lib/api';
 
 // ── Tiny shared input components ──────────────────────────────────────────────
 function SettingRow({ label, description, children }) {
@@ -152,7 +152,7 @@ export default function SettingsPage() {
     setSyncMsg('');
     try {
       const res = await fetch('/api/config/export', {
-        headers: { Authorization: `Bearer ${user?.token}` },
+        headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const blob = await res.blob();
@@ -174,6 +174,7 @@ export default function SettingsPage() {
   const handleImport = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (importInputRef.current) importInputRef.current.value = '';
     setSyncStatus('importing');
     setSyncMsg('');
     try {
@@ -189,7 +190,6 @@ export default function SettingsPage() {
       setSyncStatus('error');
       setSyncMsg(`Import failed: ${err.message}`);
     }
-    if (importInputRef.current) importInputRef.current.value = '';
   };
 
   const showToast = (msg, type = 'success') => {
