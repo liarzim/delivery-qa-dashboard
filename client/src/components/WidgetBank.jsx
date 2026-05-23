@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useDraggable } from '@dnd-kit/core';
 import { GripVertical, CheckCircle2, X, Layers, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
@@ -10,27 +9,20 @@ import { widgetApi } from '../services/widgetApi';
 function BankItem({ widget, isOnGrid, onDelete }) {
   const [confirming, setConfirming] = useState(false);
 
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `bank-${widget.id}`,
-    data: { widget, fromBank: true },
-    disabled: isOnGrid || confirming,
-  });
-
-  const style = transform
-    ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 50 }
-    : undefined;
+  // HTML5 drag so react-grid-layout can receive the drop
+  const handleDragStart = (e) => {
+    e.dataTransfer.setData('widgetId', String(widget.id));
+    e.dataTransfer.effectAllowed = 'copy';
+  };
 
   const baseBg = isOnGrid
     ? 'rgba(20,65,245,0.04)'
-    : isDragging
-      ? 'rgba(20,65,245,0.2)'
-      : 'rgba(20,65,245,0.08)';
+    : 'rgba(20,65,245,0.08)';
 
   // ── Confirm-delete mode ────────────────────────────────────────────────────
   if (confirming) {
     return (
       <div
-        ref={setNodeRef}
         className="flex items-center gap-2 px-3 py-2.5 rounded-lg select-none"
         style={{ backgroundColor: 'rgba(243,96,89,0.12)', border: '1px solid rgba(243,96,89,0.4)' }}
       >
@@ -55,22 +47,19 @@ function BankItem({ widget, isOnGrid, onDelete }) {
 
   return (
     <div
-      ref={setNodeRef}
+      draggable={!isOnGrid && !confirming}
+      onDragStart={!isOnGrid ? handleDragStart : undefined}
+      className="flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all select-none"
       style={{
-        ...style,
         backgroundColor: baseBg,
         border: isOnGrid
           ? '1px solid rgba(20,65,245,0.15)'
-          : isDragging
-            ? '1px solid #1441F5'
-            : '1px solid rgba(20,65,245,0.2)',
+          : '1px solid rgba(20,65,245,0.2)',
         opacity: isOnGrid ? 0.45 : 1,
-        cursor: isOnGrid ? 'not-allowed' : isDragging ? 'grabbing' : 'grab',
+        cursor: isOnGrid ? 'not-allowed' : 'grab',
       }}
-      {...attributes}
-      className="flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all select-none"
     >
-      <span {...listeners} className="shrink-0" style={{ color: 'rgba(237,240,254,0.35)' }}>
+      <span className="shrink-0" style={{ color: 'rgba(237,240,254,0.35)' }}>
         <GripVertical size={14} />
       </span>
       <div className="flex-1 min-w-0">

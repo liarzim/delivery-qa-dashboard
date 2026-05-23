@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LayoutProvider } from './context/LayoutContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { WidgetBankProvider } from './context/WidgetBankContext';
@@ -65,19 +66,21 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <SettingsProvider>
-        <LanguageProvider>
-          <ThemeProvider>
-            <DataProvider>
-              <WidgetBankProvider>
-                <EditModeProvider>
-                  <AppRoutes />
-                </EditModeProvider>
-              </WidgetBankProvider>
-            </DataProvider>
-          </ThemeProvider>
-        </LanguageProvider>
-      </SettingsProvider>
+      <LayoutProvider>
+        <SettingsProvider>
+          <LanguageProvider>
+            <ThemeProvider>
+              <DataProvider>
+                <WidgetBankProvider>
+                  <EditModeProvider>
+                    <AppRoutes />
+                  </EditModeProvider>
+                </WidgetBankProvider>
+              </DataProvider>
+            </ThemeProvider>
+          </LanguageProvider>
+        </SettingsProvider>
+      </LayoutProvider>
     </AuthProvider>
   );
 }

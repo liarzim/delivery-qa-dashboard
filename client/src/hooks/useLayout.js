@@ -1,94 +1,60 @@
-import { useState, useCallback, useRef } from 'react';
-import { store } from '../lib/store';
+import { useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLayoutContext } from '../context/LayoutContext';
 
-// ── Storage key helpers ────────────────────────────────────────────────────────
-function layoutKey(dashboardId, username) {
-  return `layout_${dashboardId}_${username || 'guest'}`;
-}
-function masterKey(dashboardId) {
-  return `layout_master_${dashboardId}`;
-}
-
-// ── Hook ───────────────────────────────────────────────────────────────────────
 export function useLayout(dashboardId, allWidgets) {
   const { user } = useAuth();
-  const username     = user?.username;
-  const isAdmin      = user?.role === 'Admin';
+  const isAdmin = user?.role === 'Admin';
   const defaultOrder = allWidgets.map(w => w.id);
 
-  // Initialise from localStorage synchronously (no flash)
-  const [order, setOrder] = useState(() => {
-    const saved = store.get(layoutKey(dashboardId, username));
-    return saved?.order ?? defaultOrder;
-  });
-  const [hidden, setHidden] = useState(() => {
-    const saved = store.get(layoutKey(dashboardId, username));
-    return saved?.hidden ?? [];
-  });
-  const [hasCustom, setHasCustom] = useState(
-    () => !!store.get(layoutKey(dashboardId, username)),
-  );
+  const {
+    getLayout, setLayout,
+    getMaster, setAsMaster: ctxSetAsMaster,
+    resetToMaster: ctxResetToMaster,
+    hasCustom,
+  } = useLayoutContext();
+
+  // Derive order/hidden from context (falls back to master, then default)
+  const saved  = getLayout(dashboardId);
+  const masterLayout = getMaster(dashboardId);
+
+  const order  = saved?.order  ?? masterLayout?.order  ?? defaultOrder;
+  const hidden = saved?.hidden ?? masterLayout?.hidden ?? [];
+
   const [editMode, setEditMode] = useState(false);
 
-  const saveTimer = useRef(null);
-
-  // Debounced localStorage write so rapid drags don't thrash storage
-  const save = useCallback((newOrder, newHidden) => {
-    clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      store.set(layoutKey(dashboardId, username), { order: newOrder, hidden: newHidden });
-      setHasCustom(true);
-    }, 300);
-  }, [dashboardId, username]);
-
+  // ── Mutations ──────────────────────────────────────────────────────────────
   const move = useCallback((fromIndex, toIndex) => {
-    setOrder(prev => {
-      const next = [...prev];
-      const [item] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, item);
-      save(next, hidden);
-      return next;
-    });
-  }, [hidden, save]);
+    const ids = [
+      ...order.filter(id => !hidden.includes(id)),
+      ...defaultOrder.filter(id => !order.includes(id) && !hidden.includes(id)),
+    ];
+    const next = [...ids];
+    const [item] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, item);
+    setLayout(dashboardId, { order: next, hidden });
+  }, [dashboardId, order, hidden, defaultOrder, setLayout]);
 
   const hide = useCallback((id) => {
-    setHidden(prev => {
-      const next = prev.includes(id) ? prev : [...prev, id];
-      save(order, next);
-      return next;
-    });
-  }, [order, save]);
+    const next = hidden.includes(id) ? hidden : [...hidden, id];
+    setLayout(dashboardId, { order, hidden: next });
+  }, [dashboardId, order, hidden, setLayout]);
 
   const show = useCallback((id) => {
-    setHidden(prev => {
-      const next = prev.filter(h => h !== id);
-      save(order, next);
-      return next;
-    });
-  }, [order, save]);
+    const next = hidden.filter(h => h !== id);
+    setLayout(dashboardId, { order, hidden: next });
+  }, [dashboardId, order, hidden, setLayout]);
 
-  // Admin: snapshot current layout as the shared default for all users
   const setAsMaster = useCallback(() => {
-    store.set(masterKey(dashboardId), { order, hidden });
-  }, [dashboardId, order, hidden]);
+    return ctxSetAsMaster(dashboardId, { order, hidden });
+  }, [ctxSetAsMaster, dashboardId, order, hidden]);
 
-  // Reset personal layout → falls back to master (if set) or factory default
   const resetToMaster = useCallback(() => {
-    store.remove(layoutKey(dashboardId, username));
-    setHasCustom(false);
     setEditMode(false);
-    const master = store.get(masterKey(dashboardId));
-    if (master) {
-      setOrder(master.order ?? defaultOrder);
-      setHidden(master.hidden ?? []);
-    } else {
-      setOrder(defaultOrder);
-      setHidden([]);
-    }
-  }, [dashboardId, defaultOrder, username]);
+    return ctxResetToMaster(dashboardId);
+  }, [ctxResetToMaster, dashboardId]);
 
-  // Visible = saved order first, then any widgets not yet in saved order
+  // ── Derived widget lists ───────────────────────────────────────────────────
   const visibleWidgets = [
     ...order.filter(id => !hidden.includes(id)),
     ...defaultOrder.filter(id => !order.includes(id) && !hidden.includes(id)),
