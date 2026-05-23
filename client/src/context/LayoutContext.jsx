@@ -83,6 +83,7 @@ export function LayoutProvider({ children }) {
   }, [master]);
 
   const resetToMaster = useCallback(async (dashboardId) => {
+    clearTimeout(saveTimer.current);
     const next = { ...allLayouts };
     delete next[dashboardId];
     store.set(CACHE_KEY, next);
