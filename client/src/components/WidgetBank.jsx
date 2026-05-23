@@ -66,7 +66,7 @@ function BankItem({ widget, isOnGrid, onDelete, onEdit }) {
         <p className="text-xs truncate" style={{ color: 'rgba(237,240,254,0.4)' }}>{widget.category}</p>
       </div>
       {isOnGrid && <CheckCircle2 size={12} className="text-sigma-accent shrink-0" />}
-      {onEdit && (
+      {onEdit && !isOnGrid && (
         <button
           onClick={e => { e.stopPropagation(); onEdit(widget.id); }}
           className="shrink-0 p-0.5 rounded opacity-40 hover:opacity-100 transition-opacity"
