@@ -19,6 +19,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { fetchRawData } from '../services/widgetApi';
 import { buildChartData } from '../utils/widgetAggregation';
 import LivePreview from './LivePreview';
+import EditableText from './EditableText';
 import { Loader2, AlertCircle, Pencil } from 'lucide-react';
 
 export default function CustomWidgetRenderer({ widgetId, config, name, compact = false }) {
@@ -81,11 +82,16 @@ export default function CustomWidgetRenderer({ widgetId, config, name, compact =
     <div className="card h-full flex flex-col" style={{ padding: compact ? '0' : undefined }}>
       {!compact && (
         <div className="flex items-center justify-between px-3 pt-3 pb-1 shrink-0">
-          <p className="text-xs font-semibold truncate" style={{ color: 'rgba(237,240,254,0.7)' }}>
-            {lang === 'he' && config.name_he
-              ? config.name_he
-              : (name || config.name || 'Custom Widget')}
-          </p>
+          <EditableText
+            textKey={`custom_widget.${widgetId}.title`}
+            fallback={
+              lang === 'he' && config.name_he
+                ? config.name_he
+                : (name || config.name || 'Custom Widget')
+            }
+            className="text-xs font-semibold truncate"
+            style={{ color: 'rgba(237,240,254,0.7)' }}
+          />
           {widgetId && (
             <button
               onClick={() => navigate(`/widget-builder/${widgetId}`)}
