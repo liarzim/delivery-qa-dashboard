@@ -11,6 +11,7 @@ const subDashRoutes     = require('./routes/subDashboards');
 const debugRoutes       = require('./routes/debug');
 const widgetRoutes      = require('./routes/widgets');
 const rawDataRoutes     = require('./routes/rawData');
+const configRoutes      = require('./routes/config');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -26,6 +27,7 @@ app.use('/api/sub-dashboards', subDashRoutes);
 app.use('/api/debug',         debugRoutes);
 app.use('/api/widgets',       widgetRoutes);
 app.use('/api/data/raw',      rawDataRoutes);
+app.use('/api/config',        configRoutes);
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
 
 // Serve the built React app
