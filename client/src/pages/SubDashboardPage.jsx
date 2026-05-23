@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useSettings } from '../context/SettingsContext';
@@ -37,19 +37,21 @@ export default function SubDashboardPage() {
   // Each sub-dashboard gets its own layout key in LayoutContext: "sub_1", "sub_2", etc.
   const rglLayout = useRGLLayout(`sub_${id}`, DEFAULT_SUB_RGL_LAYOUT);
 
-  // Build widgetMap for DashboardRGL: maps each ALL_WIDGETS id → rendered content
-  const widgetMap = {};
-  for (const w of ALL_WIDGETS) {
-    const displayW = lang === 'he' ? { ...w, label: w.label_he || w.label } : w;
-    widgetMap[w.id] = (
-      <WidgetSlotContent
-        widget={displayW}
-        delivery={delivery}
-        qa={qa}
-        settings={settings}
-      />
-    );
-  }
+  const widgetMap = useMemo(() => {
+    const map = {};
+    for (const w of ALL_WIDGETS) {
+      const displayW = lang === 'he' ? { ...w, label: w.label_he || w.label } : w;
+      map[w.id] = (
+        <WidgetSlotContent
+          widget={displayW}
+          delivery={delivery}
+          qa={qa}
+          settings={settings}
+        />
+      );
+    }
+    return map;
+  }, [lang, delivery, qa, settings]);
 
   // renderCustom: called by DashboardRGL for items whose id starts with "custom_"
   const renderCustom = useCallback((widgetId) => {
