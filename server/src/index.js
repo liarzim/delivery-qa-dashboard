@@ -16,7 +16,7 @@ const configRoutes      = require('./routes/config');
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 // API routes (must come before static)
 app.use('/api/auth',           authRoutes);

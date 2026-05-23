@@ -1,11 +1,8 @@
 const express = require('express');
 const { getDb } = require('../db/init');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
-
-// Increase body size limit for import route to handle large exports
-router.use(express.json({ limit: '5mb' }));
 
 // GET /api/config/export — admin only
 router.get('/export', requireAdmin, (req, res) => {
