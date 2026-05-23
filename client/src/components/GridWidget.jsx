@@ -6,6 +6,7 @@ import KpiCard from './KpiCard';
 import TrafficLightWidget from './TrafficLightWidget';
 import GaugeChart from './GaugeChart';
 import CustomWidgetRenderer from './CustomWidgetRenderer';
+import EditableText from './EditableText';
 import { getTrafficLight, getLightHex } from '../utils/thresholds';
 
 function WidgetContent({ widget, delivery, qa, settings }) {
@@ -170,6 +171,15 @@ export default function GridWidget({ widget, delivery, qa, settings, onRemove })
       >
         <X size={14} />
       </button>
+
+      <div className="absolute bottom-1 left-2 right-2 z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+        <EditableText
+          textKey={`widget.${widget.id}.label`}
+          fallback={widget.label || widget.id}
+          className="text-xs pointer-events-auto"
+          style={{ color: 'rgba(237,240,254,0.35)' }}
+        />
+      </div>
 
       <WidgetContent widget={widget} delivery={delivery} qa={qa} settings={settings} />
     </div>
