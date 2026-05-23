@@ -899,7 +899,7 @@ export default function SettingsPage() {
           <h3 style={sectionTitleStyle}>System Sync</h3>
         </div>
         <p className="text-xs mb-4" style={{ color: 'rgba(237,240,254,0.4)' }}>
-          Export all settings, approved widgets, and user layouts to a portable JSON file. Import on another machine to restore the same configuration.
+          Export all settings, approved widgets, and user layouts to a portable JSON file. Import on another machine to restore the same configuration. Note: the export file includes each user's personal layout preferences (widget positions and sizes) alongside global config.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <button
