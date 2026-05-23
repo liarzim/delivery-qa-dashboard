@@ -96,15 +96,17 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom }) {
             <RotateCcw size={12} /> Reset to Default
           </button>
         )}
-        <button
-          onClick={toggleEditMode}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
-          style={editMode
-            ? { backgroundColor: 'rgba(84,224,117,0.15)', color: '#54E075', border: '1px solid rgba(84,224,117,0.35)' }
-            : { backgroundColor: 'rgba(63,100,247,0.12)', color: 'rgba(237,240,254,0.7)', border: '1px solid rgba(63,100,247,0.3)' }}
-        >
-          {editMode ? <><Check size={12} /> Done</> : <><LayoutGrid size={12} /> Edit Layout</>}
-        </button>
+        {isAdmin && (
+          <button
+            onClick={toggleEditMode}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
+            style={editMode
+              ? { backgroundColor: 'rgba(84,224,117,0.15)', color: '#54E075', border: '1px solid rgba(84,224,117,0.35)' }
+              : { backgroundColor: 'rgba(63,100,247,0.12)', color: 'rgba(237,240,254,0.7)', border: '1px solid rgba(63,100,247,0.3)' }}
+          >
+            {editMode ? <><Check size={12} /> Done</> : <><LayoutGrid size={12} /> Edit Layout</>}
+          </button>
+        )}
       </div>
 
       {/* Grid — ref div measures container width for RGL v2 */}

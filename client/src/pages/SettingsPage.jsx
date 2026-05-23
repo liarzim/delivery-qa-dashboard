@@ -185,7 +185,8 @@ export default function SettingsPage() {
         body: JSON.stringify(payload),
       });
       setSyncStatus('done');
-      setSyncMsg(`Import complete — settings: ${result.imported.settings}, widgets: ${result.imported.widgets}, layouts: ${result.imported.layouts}`);
+      setSyncMsg(`Import complete (${result.imported.settings} settings, ${result.imported.widgets} widgets, ${result.imported.layouts} layouts) — reloading…`);
+      setTimeout(() => window.location.reload(), 1500);
     } catch (err) {
       setSyncStatus('error');
       setSyncMsg(`Import failed: ${err.message}`);

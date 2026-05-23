@@ -4,6 +4,16 @@ const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+const KNOWN_SETTINGS_KEYS = new Set([
+  'excel_path', 'delivery_file', 'qa_bug_file', 'qa_escaping_file',
+  'delivery_weight', 'quality_weight',
+  'reopen_yellow', 'reopen_red', 'rejected_yellow', 'rejected_red',
+  'escaping_yellow', 'escaping_red', 'reopen_density_yellow', 'reopen_density_red',
+  'rejected_density_yellow', 'rejected_density_red', 'escaping_density_yellow', 'escaping_density_red',
+  'commitment_yellow', 'commitment_red', 'weighted_yellow', 'weighted_red',
+  'squad_visibility', 'pi_name_map', 'title_overrides', 'master_layout',
+]);
+
 // GET /api/config/export — admin only
 router.get('/export', requireAdmin, (req, res) => {
   const db = getDb();
@@ -62,6 +72,7 @@ router.post('/import', requireAdmin, (req, res) => {
       `);
       let settingsCount = 0;
       for (const [key, value] of Object.entries(settings)) {
+        if (!KNOWN_SETTINGS_KEYS.has(key)) continue;
         upsertSetting.run(key, String(value));
         settingsCount++;
       }
@@ -94,7 +105,10 @@ router.post('/import', requireAdmin, (req, res) => {
       // 3. Replace all user layouts — validate before deleting
       let layoutsCount = 0;
       if (Array.isArray(userLayouts)) {
-        const validLayouts = userLayouts.filter(ul => ul.user_id && ul.layout_json);
+        const validLayouts = userLayouts.filter(ul => {
+          if (!ul.user_id || !ul.layout_json) return false;
+          try { JSON.parse(ul.layout_json); return true; } catch { return false; }
+        });
         if (validLayouts.length > 0) {
           db.prepare('DELETE FROM user_layouts').run();
           const insertLayout = db.prepare(`
