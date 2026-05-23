@@ -6,7 +6,7 @@
  *   widgetMap     — { [widgetId]: <JSX> }  built-in widgets rendered by caller
  *   renderCustom  — (widgetId: string) => <JSX>  called for 'custom_*' items
  */
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import ReactGridLayout from 'react-grid-layout';
 import { useEditMode } from '../context/EditModeContext';
 import { useAuth } from '../context/AuthContext';
@@ -16,10 +16,35 @@ const COL_COUNT  = 12;
 const ROW_HEIGHT = 80;   // px per grid row unit
 const MARGIN     = [12, 12]; // [horizontal, vertical] gap in px
 
+/**
+ * Hook: measures the pixel width of a container element via ResizeObserver.
+ * react-grid-layout v2 requires an explicit `width` prop on the default export
+ * (it no longer includes a built-in ResizeObserver).
+ */
+function useContainerWidth() {
+  const ref = useRef(null);
+  const [width, setWidth] = useState(1200); // sensible fallback until measured
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const obs = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width;
+      if (w > 0) setWidth(w);
+    });
+    obs.observe(ref.current);
+    // Seed immediately from current size
+    setWidth(ref.current.getBoundingClientRect().width || 1200);
+    return () => obs.disconnect();
+  }, []);
+
+  return { ref, width };
+}
+
 export default function DashboardRGL({ rglLayout, widgetMap, renderCustom }) {
   const { editMode, toggleEditMode } = useEditMode();
   const { user } = useAuth();
   const isAdmin = user?.role === 'Admin';
+  const { ref: gridRef, width: gridWidth } = useContainerWidth();
 
   const {
     rglItems, onLayoutChange,
@@ -82,10 +107,12 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom }) {
         </button>
       </div>
 
-      {/* Grid */}
+      {/* Grid — ref div measures container width for RGL v2 */}
+      <div ref={gridRef}>
       <ReactGridLayout
         className="layout"
         layout={rglItems}
+        width={gridWidth}
         cols={COL_COUNT}
         rowHeight={ROW_HEIGHT}
         margin={MARGIN}
@@ -133,6 +160,7 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom }) {
           </div>
         ))}
       </ReactGridLayout>
+      </div>
     </div>
   );
 }

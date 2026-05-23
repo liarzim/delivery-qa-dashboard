@@ -2,7 +2,7 @@
  * LayoutContext — server-synced layout for all dashboards.
  *
  * Shape persisted (per user, SQLite user_layouts table):
- *   { [dashboardId]: { order: string[], hidden: string[] } }
+ *   { [dashboardId]: { order: string[], hidden: string[] } | { rglItems: RGLItem[] } }
  *
  * localStorage key "layout_server_cache" is used as fast-init to avoid flash.
  */
@@ -61,9 +61,9 @@ export function LayoutProvider({ children }) {
     return allLayouts[dashboardId] || null;
   }, [allLayouts]);
 
-  const setLayout = useCallback((dashboardId, { order, hidden }) => {
+  const setLayout = useCallback((dashboardId, layout) => {
     setAllLayouts(prev => {
-      const next = { ...prev, [dashboardId]: { order, hidden } };
+      const next = { ...prev, [dashboardId]: layout };
       persistLayouts(next);
       return next;
     });
@@ -73,8 +73,8 @@ export function LayoutProvider({ children }) {
     return master[dashboardId] || null;
   }, [master]);
 
-  const setAsMaster = useCallback(async (dashboardId, { order, hidden }) => {
-    const next = { ...master, [dashboardId]: { order, hidden } };
+  const setAsMaster = useCallback(async (dashboardId, layout) => {
+    const next = { ...master, [dashboardId]: layout };
     setMaster(next);
     await apiFetch('/api/layout/master', {
       method: 'PUT',
