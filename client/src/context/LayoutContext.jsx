@@ -83,16 +83,16 @@ export function LayoutProvider({ children }) {
   }, [master]);
 
   const resetToMaster = useCallback(async (dashboardId) => {
-    await apiFetch('/api/layout', { method: 'DELETE' });
-    setHasCustom(false);
-    // Remove this dashboard's entry from allLayouts so it falls back to master
-    setAllLayouts(prev => {
-      const next = { ...prev };
-      delete next[dashboardId];
-      store.set(CACHE_KEY, next);
-      return next;
+    const next = { ...allLayouts };
+    delete next[dashboardId];
+    store.set(CACHE_KEY, next);
+    setAllLayouts(next);
+    setHasCustom(Object.keys(next).length > 0);
+    await apiFetch('/api/layout', {
+      method: 'PUT',
+      body: JSON.stringify({ layout: next }),
     });
-  }, []);
+  }, [allLayouts]);
 
   return (
     <LayoutContext.Provider value={{
