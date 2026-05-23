@@ -22,6 +22,7 @@ import GridDropZone from '../components/GridDropZone';
 import { getTrafficLight } from '../utils/thresholds';
 import { AlertCircle, ChevronDown, ChevronRight, ChevronLeft, Layers, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import EditableText from '../components/EditableText';
 import { useWidgetBank } from '../context/WidgetBankContext';
 import { ALL_WIDGETS } from '../constants/widgets';
 
@@ -37,7 +38,18 @@ const C = {
 };
 const SQUAD_COLORS = ['#3F64F7', '#54E075', '#FB79F3', '#F9BD33', '#F36059', '#27DBE4'];
 
-function CardLabel({ children }) {
+function CardLabel({ children, textKey }) {
+  if (textKey) {
+    return (
+      <EditableText
+        textKey={textKey}
+        fallback={typeof children === 'string' ? children : ''}
+        tag="p"
+        className="text-xs font-semibold mb-4"
+        style={{ color: 'rgba(237,240,254,0.5)' }}
+      />
+    );
+  }
   return <p className="text-xs font-semibold mb-4" style={{ color: 'rgba(237,240,254,0.5)' }}>{children}</p>;
 }
 
@@ -116,7 +128,7 @@ export default function QADashboard() {
 
     'chart-trends': (
       <div className="card">
-        <CardLabel>Bug Rate Trends (%)</CardLabel>
+        <CardLabel textKey="qa.trends.caption">Bug Rate Trends (%)</CardLabel>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={trendData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={G.grid} />
@@ -134,7 +146,7 @@ export default function QADashboard() {
 
     'chart-density': (
       <div className="card">
-        <CardLabel>Density Trends</CardLabel>
+        <CardLabel textKey="qa.density.caption">Density Trends</CardLabel>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={densityData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={G.grid} />
@@ -152,7 +164,7 @@ export default function QADashboard() {
 
     'squad-comparison': squadMetrics.length > 0 && (
       <div className="card">
-        <CardLabel>Squad Bug Comparison (all PIs)</CardLabel>
+        <CardLabel textKey="qa.squad.caption">Squad Bug Comparison (all PIs)</CardLabel>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={squadMetrics} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={G.grid} />
@@ -172,7 +184,7 @@ export default function QADashboard() {
 
     'pi-table': (
       <div className="card">
-        <CardLabel>PI Detail Breakdown — click a row to expand squad view</CardLabel>
+        <CardLabel textKey="qa.pi_table.caption">PI Detail Breakdown — click a row to expand squad view</CardLabel>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

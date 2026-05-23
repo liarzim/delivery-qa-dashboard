@@ -22,6 +22,7 @@ import GridWidget from '../components/GridWidget';
 import GridDropZone from '../components/GridDropZone';
 import { AlertCircle, ChevronDown, ChevronRight, ChevronLeft, Layers, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import EditableText from '../components/EditableText';
 import { useWidgetBank } from '../context/WidgetBankContext';
 import { ALL_WIDGETS } from '../constants/widgets';
 
@@ -37,7 +38,18 @@ const C = {
   inProgress: '#3F64F7', todo: '#44546A', flow: '#27DBE4',
 };
 
-function CardLabel({ children }) {
+function CardLabel({ children, textKey }) {
+  if (textKey) {
+    return (
+      <EditableText
+        textKey={textKey}
+        fallback={typeof children === 'string' ? children : ''}
+        tag="p"
+        className="text-xs font-semibold mb-4"
+        style={{ color: 'rgba(237,240,254,0.5)' }}
+      />
+    );
+  }
   return <p className="text-xs font-semibold mb-4" style={{ color: 'rgba(237,240,254,0.5)' }}>{children}</p>;
 }
 
@@ -141,7 +153,7 @@ export default function DeliveryDashboard() {
 
     'chart-velocity': (
       <div className="card">
-        <CardLabel>Flow Throughput &amp; Average Velocity</CardLabel>
+        <CardLabel textKey="delivery.velocity.caption">Flow Throughput &amp; Average Velocity</CardLabel>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={velocityData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={G.grid} />
@@ -158,7 +170,7 @@ export default function DeliveryDashboard() {
 
     'chart-commitment': (
       <div className="card">
-        <CardLabel>Commitment Rate Trend</CardLabel>
+        <CardLabel textKey="delivery.commitment.caption">Commitment Rate Trend</CardLabel>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={piMetrics} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={G.grid} />
@@ -176,7 +188,7 @@ export default function DeliveryDashboard() {
 
     'chart-flowtime': (
       <div className="card">
-        <CardLabel>Median Flow Time (days)</CardLabel>
+        <CardLabel textKey="delivery.flowtime.caption">Median Flow Time (days)</CardLabel>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={medianData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={G.grid} />
@@ -191,7 +203,7 @@ export default function DeliveryDashboard() {
 
     'chart-flowdist': (
       <div className="card">
-        <CardLabel>Flow Distribution by PI</CardLabel>
+        <CardLabel textKey="delivery.flowdist.caption">Flow Distribution by PI</CardLabel>
         <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={flowDistData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={G.grid} />
@@ -209,7 +221,7 @@ export default function DeliveryDashboard() {
 
     'pi-table': (
       <div className="card">
-        <CardLabel>PI Breakdown — click a row to expand flow detail</CardLabel>
+        <CardLabel textKey="delivery.pi_table.caption">PI Breakdown — click a row to expand flow detail</CardLabel>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
