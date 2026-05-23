@@ -4,6 +4,9 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Increase body size limit for import route to handle large exports
+router.use(express.json({ limit: '5mb' }));
+
 // GET /api/config/export — admin only
 router.get('/export', requireAdmin, (req, res) => {
   const db = getDb();
@@ -51,56 +54,69 @@ router.post('/import', requireAdmin, (req, res) => {
 
   const db = getDb();
   try {
-    // 1. Upsert all settings
-    const upsertSetting = db.prepare(`
-      INSERT INTO settings (key, value, updated_at)
-      VALUES (?, ?, CURRENT_TIMESTAMP)
-      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
-    `);
-    let settingsCount = 0;
-    for (const [key, value] of Object.entries(settings)) {
-      upsertSetting.run(key, String(value));
-      settingsCount++;
-    }
-
-    // 2. Upsert approved/pending custom widgets — preserve personal ones
-    let widgetsCount = 0;
-    if (Array.isArray(customWidgets)) {
-      const upsertWidget = db.prepare(`
-        INSERT INTO custom_widgets (id, username, name, config_json, status, updated_at)
-        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(id) DO UPDATE
-          SET username    = excluded.username,
-              name        = excluded.name,
-              config_json = excluded.config_json,
-              status      = excluded.status,
-              updated_at  = CURRENT_TIMESTAMP
-        WHERE custom_widgets.status != 'personal'
-      `);
-      for (const w of customWidgets) {
-        if (!w.id || !w.name) continue;
-        if (w.status === 'personal') continue; // safety: skip any personal rows from import
-        upsertWidget.run(w.id, w.username || '', w.name, JSON.stringify(w.config || {}), w.status || 'approved');
-        widgetsCount++;
-      }
-    }
-
-    // 3. Replace all user layouts
-    let layoutsCount = 0;
-    if (Array.isArray(userLayouts) && userLayouts.length > 0) {
-      db.prepare('DELETE FROM user_layouts').run();
-      const insertLayout = db.prepare(`
-        INSERT INTO user_layouts (user_id, layout_json, updated_at)
+    // Wrap all writes in a transaction to ensure atomicity
+    db.exec('BEGIN');
+    try {
+      // 1. Upsert all settings
+      const upsertSetting = db.prepare(`
+        INSERT INTO settings (key, value, updated_at)
         VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
       `);
-      for (const ul of userLayouts) {
-        if (!ul.user_id || !ul.layout_json) continue;
-        insertLayout.run(ul.user_id, ul.layout_json);
-        layoutsCount++;
+      let settingsCount = 0;
+      for (const [key, value] of Object.entries(settings)) {
+        upsertSetting.run(key, String(value));
+        settingsCount++;
       }
-    }
 
-    res.json({ success: true, imported: { settings: settingsCount, widgets: widgetsCount, layouts: layoutsCount } });
+      // 2. Upsert approved/pending custom widgets — preserve personal ones
+      let widgetsCount = 0;
+      if (Array.isArray(customWidgets)) {
+        const upsertWidget = db.prepare(`
+          INSERT INTO custom_widgets (id, username, name, config_json, status, updated_at)
+          VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(id) DO UPDATE
+            SET username    = excluded.username,
+                name        = excluded.name,
+                config_json = excluded.config_json,
+                status      = excluded.status,
+                updated_at  = CURRENT_TIMESTAMP
+          WHERE custom_widgets.status != 'personal'
+        `);
+        for (const w of customWidgets) {
+          if (!w.id || !w.name) continue;
+          if (w.status === 'personal') continue; // safety: skip any personal rows from import
+          const configStr = typeof w.config === 'object' && w.config !== null
+            ? JSON.stringify(w.config)
+            : '{}';
+          upsertWidget.run(w.id, w.username || '', w.name, configStr, w.status || 'approved');
+          widgetsCount++;
+        }
+      }
+
+      // 3. Replace all user layouts — validate before deleting
+      let layoutsCount = 0;
+      if (Array.isArray(userLayouts)) {
+        const validLayouts = userLayouts.filter(ul => ul.user_id && ul.layout_json);
+        if (validLayouts.length > 0) {
+          db.prepare('DELETE FROM user_layouts').run();
+          const insertLayout = db.prepare(`
+            INSERT INTO user_layouts (user_id, layout_json, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+          `);
+          for (const ul of validLayouts) {
+            insertLayout.run(ul.user_id, ul.layout_json);
+            layoutsCount++;
+          }
+        }
+      }
+
+      db.exec('COMMIT');
+      res.json({ success: true, imported: { settings: settingsCount, widgets: widgetsCount, layouts: layoutsCount } });
+    } catch (err) {
+      db.exec('ROLLBACK');
+      throw err;
+    }
   } finally {
     db.close();
   }
