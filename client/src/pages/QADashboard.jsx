@@ -1,26 +1,19 @@
 import React, { useState } from 'react';
 import {
-  DndContext, DragOverlay, PointerSensor,
-  useSensor, useSensors, closestCorners,
-} from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
-import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
 } from 'recharts';
 import { useApi } from '../hooks/useApi';
-import { useLayout } from '../hooks/useLayout';
-import { useCustomGrid } from '../hooks/useCustomGrid';
+import DashboardRGL from '../components/DashboardRGL';
+import { useRGLLayout } from '../hooks/useRGLLayout';
+import CustomWidgetRenderer from '../components/CustomWidgetRenderer';
 import KpiCard from '../components/KpiCard';
 import TrafficLightWidget from '../components/TrafficLightWidget';
 import SectionHeader from '../components/SectionHeader';
 import LoadingSpinner from '../components/LoadingSpinner';
-import DashboardLayout from '../components/DashboardLayout';
 import SubDashboardTabs from '../components/SubDashboardTabs';
 import WidgetBank from '../components/WidgetBank';
-import GridWidget from '../components/GridWidget';
-import GridDropZone from '../components/GridDropZone';
 import { getTrafficLight } from '../utils/thresholds';
-import { AlertCircle, ChevronDown, ChevronRight, ChevronLeft, Layers, LayoutGrid } from 'lucide-react';
+import { AlertCircle, ChevronDown, ChevronRight, ChevronLeft, Layers } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import EditableText from '../components/EditableText';
 import { useWidgetBank } from '../context/WidgetBankContext';
@@ -53,26 +46,22 @@ function CardLabel({ children, textKey }) {
   return <p className="text-xs font-semibold mb-4" style={{ color: 'rgba(237,240,254,0.5)' }}>{children}</p>;
 }
 
-const WIDGETS = [
-  { id: 'traffic-lights',    label: 'Traffic Lights' },
-  { id: 'density-kpis',      label: 'Density KPIs' },
-  { id: 'chart-trends',      label: 'Bug Rate Trends' },
-  { id: 'chart-density',     label: 'Density Trends' },
-  { id: 'squad-comparison',  label: 'Squad Comparison' },
-  { id: 'pi-table',          label: 'PI Detail Table' },
+const QA_DEFAULT_LAYOUT = [
+  { i: 'traffic-lights',   x: 0, y: 0,  w: 12, h: 6,  minH: 4 },
+  { i: 'density-kpis',     x: 0, y: 6,  w: 12, h: 4,  minH: 3 },
+  { i: 'chart-trends',     x: 0, y: 10, w: 6,  h: 8,  minH: 5 },
+  { i: 'chart-density',    x: 6, y: 10, w: 6,  h: 8,  minH: 5 },
+  { i: 'squad-comparison', x: 0, y: 18, w: 12, h: 8,  minH: 5 },
+  { i: 'pi-table',         x: 0, y: 26, w: 12, h: 10, minH: 6 },
 ];
 
 export default function QADashboard() {
   const { t, isRTL, lang } = useLanguage();
   const { data, loading, error }   = useApi('/api/data/qa');
-  const { data: deliveryData }     = useApi('/api/data/delivery');
   const { data: settings }         = useApi('/api/settings');
   const { isOpen: bankOpen, toggle: toggleBank, setIsOpen: setBankOpen, customWidgets } = useWidgetBank();
   const [drilldown, setDrilldown]   = useState(null);
-  const layoutHook = useLayout('qa', WIDGETS);
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const customGrid = useCustomGrid('custom_grid_qa', lang, customWidgets);
+  const rglLayout = useRGLLayout('qa', QA_DEFAULT_LAYOUT);
 
   if (loading) return <LoadingSpinner />;
   if (error) return (
@@ -111,23 +100,27 @@ export default function QADashboard() {
 
   const widgetMap = {
     'traffic-lights': (
-      <div className="grid grid-cols-3 gap-4">
-        <TrafficLightWidget label="Reopen %"  value={latest.reopenPct   || 0} light={lights.reopen}   yellowThreshold={th.reopenY}   redThreshold={th.reopenR}   />
-        <TrafficLightWidget label="Rejected %" value={latest.rejectedPct || 0} light={lights.rejected}  yellowThreshold={th.rejectedY} redThreshold={th.rejectedR} />
-        <TrafficLightWidget label="Escaping %" value={latest.escapingPct || 0} light={lights.escaping}  yellowThreshold={th.escapingY} redThreshold={th.escapingR} />
+      <div className="card p-5 h-full">
+        <div className="grid grid-cols-3 gap-4">
+          <TrafficLightWidget label="Reopen %"  value={latest.reopenPct   || 0} light={lights.reopen}   yellowThreshold={th.reopenY}   redThreshold={th.reopenR}   />
+          <TrafficLightWidget label="Rejected %" value={latest.rejectedPct || 0} light={lights.rejected}  yellowThreshold={th.rejectedY} redThreshold={th.rejectedR} />
+          <TrafficLightWidget label="Escaping %" value={latest.escapingPct || 0} light={lights.escaping}  yellowThreshold={th.escapingY} redThreshold={th.escapingR} />
+        </div>
       </div>
     ),
 
     'density-kpis': (
-      <div className="grid grid-cols-3 gap-4">
-        <KpiCard label="Reopen Density"   value={latest.reopenDensity   || 0} unit="%" light={lights.reopenDensity}   sub={`Capacity: ${latest.capacity || '—'}`} />
-        <KpiCard label="Rejected Density" value={latest.rejectedDensity || 0} unit="%" light={lights.rejectedDensity} sub={`Capacity: ${latest.capacity || '—'}`} />
-        <KpiCard label="Escaping Density" value={latest.escapingDensity || 0} unit="%" light={lights.escapingDensity} sub={`Capacity: ${latest.capacity || '—'}`} />
+      <div className="card p-5 h-full">
+        <div className="grid grid-cols-3 gap-4">
+          <KpiCard label="Reopen Density"   value={latest.reopenDensity   || 0} unit="%" light={lights.reopenDensity}   sub={`Capacity: ${latest.capacity || '—'}`} />
+          <KpiCard label="Rejected Density" value={latest.rejectedDensity || 0} unit="%" light={lights.rejectedDensity} sub={`Capacity: ${latest.capacity || '—'}`} />
+          <KpiCard label="Escaping Density" value={latest.escapingDensity || 0} unit="%" light={lights.escapingDensity} sub={`Capacity: ${latest.capacity || '—'}`} />
+        </div>
       </div>
     ),
 
     'chart-trends': (
-      <div className="card">
+      <div className="card p-5 h-full">
         <CardLabel textKey="qa.trends.caption">Bug Rate Trends (%)</CardLabel>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={trendData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
@@ -145,7 +138,7 @@ export default function QADashboard() {
     ),
 
     'chart-density': (
-      <div className="card">
+      <div className="card p-5 h-full">
         <CardLabel textKey="qa.density.caption">Density Trends</CardLabel>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={densityData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
@@ -162,28 +155,32 @@ export default function QADashboard() {
       </div>
     ),
 
-    'squad-comparison': squadMetrics.length > 0 && (
-      <div className="card">
+    'squad-comparison': (
+      <div className="card p-5 h-full">
         <CardLabel textKey="qa.squad.caption">Squad Bug Comparison (all PIs)</CardLabel>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={squadMetrics} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={G.grid} />
-            <XAxis dataKey="squad" tick={G.tick} axisLine={false} tickLine={false} />
-            <YAxis tick={G.tick} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={G.tip} />
-            <Legend wrapperStyle={G.legend} />
-            <Bar dataKey="totalBugs" name="Total Bugs" radius={[3,3,0,0]}>
-              {squadMetrics.map((_, i) => <Cell key={i} fill={SQUAD_COLORS[i % SQUAD_COLORS.length]} />)}
-            </Bar>
-            <Bar dataKey="reopenCount"   name="Reopens"  fill={C.rejectedDensity} radius={[3,3,0,0]} />
-            <Bar dataKey="rejectedCount" name="Rejected" fill={C.rejected}        radius={[3,3,0,0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {squadMetrics.length > 0 ? (
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={squadMetrics} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={G.grid} />
+              <XAxis dataKey="squad" tick={G.tick} axisLine={false} tickLine={false} />
+              <YAxis tick={G.tick} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={G.tip} />
+              <Legend wrapperStyle={G.legend} />
+              <Bar dataKey="totalBugs" name="Total Bugs" radius={[3,3,0,0]}>
+                {squadMetrics.map((_, i) => <Cell key={i} fill={SQUAD_COLORS[i % SQUAD_COLORS.length]} />)}
+              </Bar>
+              <Bar dataKey="reopenCount"   name="Reopens"  fill={C.rejectedDensity} radius={[3,3,0,0]} />
+              <Bar dataKey="rejectedCount" name="Rejected" fill={C.rejected}        radius={[3,3,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <p className="text-xs" style={{ color: 'rgba(237,240,254,0.4)' }}>No squad data available.</p>
+        )}
       </div>
     ),
 
     'pi-table': (
-      <div className="card">
+      <div className="card p-5 h-full overflow-auto">
         <CardLabel textKey="qa.pi_table.caption">PI Detail Breakdown — click a row to expand squad view</CardLabel>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -278,86 +275,54 @@ export default function QADashboard() {
     ),
   };
 
-  return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={customGrid.handleDragStart}
-      onDragEnd={customGrid.handleDragEnd}
-    >
-      <div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">
-
-        <WidgetBank
-          widgets={ALL_WIDGETS}
-          activeWidgetIds={customGrid.gridWidgetIds}
-          isOpen={bankOpen}
-          onClose={() => setBankOpen(false)}
-          style={{ order: 2 }}
+  const renderCustom = (widgetId) => {
+    const numId = String(widgetId).replace('custom_', '');
+    const cw = (customWidgets || []).find(w => String(w.id) === numId);
+    return (
+      <div className="card h-full overflow-hidden">
+        <CustomWidgetRenderer
+          widgetId={numId}
+          name={cw?.name}
+          config={cw?.config || {}}
         />
-
-        <div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>
-          <SubDashboardTabs parentId="qa" parentPath="/qa" parentLabel={t('qa_title')} />
-          <SectionHeader
-            title={t('qa_title')}
-            titleKey="qa.title"
-            subtitle={t('qa_subtitle')}
-            action={
-              <button
-                onClick={toggleBank}
-                className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
-                style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
-              >
-                <Layers size={13} />
-                {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
-              </button>
-            }
-          />
-          <DashboardLayout dashboardId="qa" useLayoutHook={layoutHook} widgetMap={widgetMap} />
-
-          {/* ── Custom widgets zone (droppable even when empty) ── */}
-          <GridDropZone>
-            {customGrid.gridWidgets.length > 0 && (
-              <div className="mt-6">
-                <p className="text-xs font-bold uppercase tracking-widest mb-3"
-                  style={{ color: 'rgba(237,240,254,0.35)', letterSpacing: '0.1em' }}>
-                  {lang === 'he' ? 'ווידג\'טים מותאמים' : 'Custom Widgets'}
-                </p>
-                <SortableContext items={customGrid.gridWidgetIds} strategy={rectSortingStrategy}>
-                  <div className="grid grid-cols-3 gap-4">
-                    {customGrid.gridWidgets.map(widget => (
-                      <GridWidget
-                        key={widget.id}
-                        widget={widget}
-                        delivery={deliveryData}
-                        qa={data}
-                        settings={settings}
-                        onRemove={customGrid.removeWidget}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </div>
-            )}
-
-            {bankOpen && customGrid.gridWidgets.length === 0 && (
-              <div className="mt-6 border-2 border-dashed rounded-xl flex flex-col items-center justify-center py-12 gap-3"
-                style={{ borderColor: 'rgba(120,150,255,0.2)', color: 'rgba(237,240,254,0.3)' }}>
-                <LayoutGrid size={28} />
-                <p className="text-sm">{lang === 'he' ? 'גרור ווידג\'ט לכאן' : 'Drag a widget here to add it'}</p>
-              </div>
-            )}
-          </GridDropZone>
-        </div>
       </div>
+    );
+  };
 
-      <DragOverlay>
-        {customGrid.activeWidget && (
-          <div className="px-3 py-2 rounded-lg border text-xs font-medium shadow-xl"
-            style={{ borderColor: 'var(--p-accent)', backgroundColor: 'rgba(20,65,245,0.2)', color: '#93C5FD' }}>
-            {customGrid.activeWidget.label}
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
+  return (
+    <div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">
+
+      <WidgetBank
+        widgets={ALL_WIDGETS}
+        activeWidgetIds={(rglLayout.rglItems || []).map(it => it.i)}
+        isOpen={bankOpen}
+        onClose={() => setBankOpen(false)}
+        style={{ order: 2 }}
+      />
+
+      <div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>
+        <SubDashboardTabs parentId="qa" parentPath="/qa" parentLabel={t('qa_title')} />
+        <SectionHeader
+          title={t('qa_title')}
+          titleKey="qa.title"
+          subtitle={t('qa_subtitle')}
+          action={
+            <button
+              onClick={toggleBank}
+              className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
+              style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
+            >
+              <Layers size={13} />
+              {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
+            </button>
+          }
+        />
+        <DashboardRGL
+          rglLayout={rglLayout}
+          widgetMap={widgetMap}
+          renderCustom={renderCustom}
+        />
+      </div>
+    </div>
   );
 }
