@@ -1,22 +1,18 @@
-import React, { useState, useCallback } from 'react';
-import {
-  DndContext, DragOverlay, PointerSensor,
-  useSensor, useSensors, closestCorners,
-} from '@dnd-kit/core';
-import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
+import React, { useCallback, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
-import { store } from '../lib/store';
-import GridWidget from '../components/GridWidget';
 import WidgetBank from '../components/WidgetBank';
-import GridDropZone from '../components/GridDropZone';
+import DashboardRGL from '../components/DashboardRGL';
 import SectionHeader from '../components/SectionHeader';
 import LoadingSpinner from '../components/LoadingSpinner';
 import SubDashboardTabs from '../components/SubDashboardTabs';
-import { LayoutGrid, Layers } from 'lucide-react';
+import WidgetSlotContent from '../components/WidgetSlotContent';
+import CustomWidgetRenderer from '../components/CustomWidgetRenderer';
+import { Layers } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
+import { useRGLLayout } from '../hooks/useRGLLayout';
 import { getTrafficLight, LIGHT_COLORS } from '../utils/thresholds';
-import { ALL_WIDGETS, DEFAULT_LAYOUT } from '../constants/widgets';
+import { ALL_WIDGETS, DEFAULT_OVERVIEW_RGL_LAYOUT } from '../constants/widgets';
 
 // ── Traffic Light card ────────────────────────────────────────────────────────
 
@@ -198,165 +194,86 @@ export default function MainDashboard() {
   const { data: qa,       loading: qLoading } = useApi('/api/data/qa');
   const { data: settings }                     = useApi('/api/settings');
 
-  const [gridWidgetIds, setGridWidgetIds] = useState(
-    () => store.get('layout', DEFAULT_LAYOUT),
-  );
-  const [activeId, setActiveId] = useState(null);
+  const rglLayout = useRGLLayout('overview', DEFAULT_OVERVIEW_RGL_LAYOUT);
 
-  const saveLayout = useCallback((ids) => store.set('layout', ids), []);
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-
-  // Helper: resolve a widget object (built-in or custom) by its grid ID
-  const resolveWidget = (wid) => {
-    const builtin = ALL_WIDGETS.find(w => w.id === wid);
-    if (builtin) {
-      return lang === 'he'
-        ? { ...builtin, label: builtin.label_he || builtin.label }
-        : builtin;
+  const widgetMap = useMemo(() => {
+    const map = {};
+    for (const w of ALL_WIDGETS) {
+      const displayW = lang === 'he' ? { ...w, label: w.label_he || w.label } : w;
+      map[w.id] = (
+        <WidgetSlotContent
+          widget={displayW}
+          delivery={delivery}
+          qa={qa}
+          settings={settings}
+        />
+      );
     }
-    if (String(wid).startsWith('custom_')) {
-      const numId = String(wid).replace('custom_', '');
-      const cw    = customWidgets.find(w => String(w.id) === numId);
-      if (cw) {
-        const cfg     = cw.config || {};
-        const isHe    = lang === 'he';
-        return {
-          id:     wid,
-          label:  isHe && cfg.name_he ? cfg.name_he : (cw.name || 'Custom'),
-          config: cfg,
-          status: cw.status,
-        };
-      }
-      return { id: wid, label: 'Custom Widget', config: {} };
+    return map;
+  }, [lang, delivery, qa, settings]);
+
+  const renderCustom = useCallback((widgetId) => {
+    const numId = String(widgetId).replace('custom_', '');
+    const cw    = (customWidgets || []).find(w => String(w.id) === numId);
+    if (!cw) {
+      return (
+        <div className="card flex items-center justify-center text-xs"
+          style={{ color: 'rgba(237,240,254,0.4)' }}>
+          Widget not found
+        </div>
+      );
     }
-    return null;
-  };
+    return (
+      <CustomWidgetRenderer
+        widgetId={numId}
+        config={cw.config || {}}
+        name={cw.name}
+      />
+    );
+  }, [customWidgets]);
 
-  const gridWidgets  = gridWidgetIds.map(resolveWidget).filter(Boolean);
-  const activeWidget = activeId
-    ? (() => {
-        const raw = String(activeId).startsWith('bank-')
-          ? String(activeId).replace('bank-', '')
-          : activeId;
-        return resolveWidget(raw);
-      })()
-    : null;
-
-  const handleDragStart = ({ active }) => setActiveId(active.id);
-
-  const handleDragEnd = ({ active, over }) => {
-    setActiveId(null);
-    if (!over) return;
-    if (String(active.id).startsWith('bank-')) {
-      const widgetId = String(active.id).replace('bank-', '');
-      if (!gridWidgetIds.includes(widgetId)) {
-        const newIds = [...gridWidgetIds, widgetId];
-        setGridWidgetIds(newIds);
-        saveLayout(newIds);
-      }
-      return;
-    }
-    // Ignore drops onto the drop-zone sentinel (not a real widget)
-    if (over.id === 'grid-drop-zone') return;
-    if (active.id !== over.id) {
-      const oldIndex = gridWidgetIds.indexOf(active.id);
-      const newIndex = gridWidgetIds.indexOf(over.id);
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newIds = arrayMove(gridWidgetIds, oldIndex, newIndex);
-        setGridWidgetIds(newIds);
-        saveLayout(newIds);
-      }
-    }
-  };
-
-  const removeWidget = (id) => {
-    const newIds = gridWidgetIds.filter(w => w !== id);
-    setGridWidgetIds(newIds);
-    saveLayout(newIds);
-  };
-
-  const resetLayout = () => { setGridWidgetIds(DEFAULT_LAYOUT); saveLayout(DEFAULT_LAYOUT); };
+  const activeWidgetIds = rglLayout.rglItems.map(item => item.i);
 
   if (dLoading || qLoading) return <LoadingSpinner message="Loading dashboard data…" />;
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      {/* flex-row — bank panel sits on the opposite side from the nav bar.
-          In LTR (EN) the nav is on the left so bank goes to the right (order:2).
-          In RTL (HE) the nav is on the right so bank goes to the left (order:-1). */}
-      <div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">
+    <div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">
 
-        <WidgetBank
-          widgets={ALL_WIDGETS}
-          activeWidgetIds={gridWidgetIds}
-          isOpen={bankOpen}
-          onClose={() => setBankOpen(false)}
-          style={{ order: 2 }}
+      <WidgetBank
+        widgets={ALL_WIDGETS}
+        activeWidgetIds={activeWidgetIds}
+        isOpen={bankOpen}
+        onClose={() => setBankOpen(false)}
+        style={{ order: 2 }}
+      />
+
+      <div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>
+        <SubDashboardTabs parentId="overview" parentPath="/" parentLabel={t('overview_title')} />
+
+        <SectionHeader
+          title={t('overview_title')}
+          titleKey="overview.title"
+          subtitle={t('overview_subtitle')}
+          action={
+            <button
+              onClick={toggleBank}
+              className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
+              style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
+            >
+              <Layers size={13} />
+              {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
+            </button>
+          }
         />
 
-        <div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>
-          <SubDashboardTabs parentId="overview" parentPath="/" parentLabel={t('overview_title')} />
-          <SectionHeader
-            title={t('overview_title')}
-            titleKey="overview.title"
-            subtitle={t('overview_subtitle')}
-            action={
-              <div className="flex items-center gap-2">
-                {/* Widget Bank toggle — visible on this layout page */}
-                <button
-                  onClick={toggleBank}
-                  className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
-                  style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
-                >
-                  <Layers size={13} />
-                  {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
-                </button>
-                <button onClick={resetLayout} className="btn-secondary text-xs py-1.5">
-                  {t('overview_reset_layout')}
-                </button>
-              </div>
-            }
-          />
+        <OverviewTrafficLights delivery={delivery} qa={qa} settings={settings} t={t} />
 
-          {/* ── 3 Traffic Lights ── */}
-          <OverviewTrafficLights delivery={delivery} qa={qa} settings={settings} t={t} />
-
-          <GridDropZone>
-            {gridWidgets.length === 0 ? (
-              <div className="border-2 border-dashed rounded-xl flex flex-col items-center justify-center py-20 gap-3"
-                style={{ borderColor: 'rgba(120,150,255,0.2)', color: 'rgba(237,240,254,0.3)' }}>
-                <LayoutGrid size={32} />
-                <p className="text-sm">{t('overview_drop_hint')}</p>
-              </div>
-            ) : (
-              <SortableContext items={gridWidgetIds} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-3 gap-4">
-                  {gridWidgets.map(widget => (
-                    <GridWidget
-                      key={widget.id}
-                      widget={widget}
-                      delivery={delivery}
-                      qa={qa}
-                      settings={settings}
-                      onRemove={removeWidget}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            )}
-          </GridDropZone>
-        </div>
+        <DashboardRGL
+          rglLayout={rglLayout}
+          widgetMap={widgetMap}
+          renderCustom={renderCustom}
+        />
       </div>
-
-      <DragOverlay>
-        {activeWidget && (
-          <div className="px-3 py-2 rounded-lg text-xs font-medium shadow-xl"
-            style={{ border: '1px solid var(--p-accent)', backgroundColor: 'rgba(20,65,245,0.2)', color: '#93C5FD' }}>
-            {activeWidget.label}
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
+    </div>
   );
 }
