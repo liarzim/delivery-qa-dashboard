@@ -59,6 +59,7 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom, suppr
   // ── Toast notification (Set as Default / Reset to Default feedback) ──────
   const [toast, setToast] = useState(null); // { text: string, type: 'success' | 'error' }
   const toastTimer = useRef(null);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
   const showToast = (text, type = 'success') => {
     clearTimeout(toastTimer.current);
     setToast({ text, type });
