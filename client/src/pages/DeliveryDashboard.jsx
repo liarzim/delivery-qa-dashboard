@@ -57,13 +57,13 @@ const WIDGETS = [
 ];
 
 const DELIVERY_DEFAULT_LAYOUT = [
-  { i: 'commitment-gauges', x: 0,  y: 0,  w: 12, h: 6,  minH: 4 },
-  { i: 'kpi-summary',       x: 0,  y: 6,  w: 12, h: 4,  minH: 3 },
-  { i: 'chart-velocity',    x: 0,  y: 10, w: 6,  h: 8,  minH: 5 },
-  { i: 'chart-commitment',  x: 6,  y: 10, w: 6,  h: 8,  minH: 5 },
-  { i: 'chart-flowtime',    x: 0,  y: 18, w: 6,  h: 8,  minH: 5 },
-  { i: 'chart-flowdist',    x: 6,  y: 18, w: 6,  h: 8,  minH: 5 },
-  { i: 'pi-table',          x: 0,  y: 26, w: 12, h: 10, minH: 6 },
+  { i: 'commitment-gauges', x: 0,  y: 0,  w: 12, h: 6,  minH: 2 },
+  { i: 'kpi-summary',       x: 0,  y: 6,  w: 12, h: 4,  minH: 2 },
+  { i: 'chart-velocity',    x: 0,  y: 10, w: 6,  h: 8,  minH: 3 },
+  { i: 'chart-commitment',  x: 6,  y: 10, w: 6,  h: 8,  minH: 3 },
+  { i: 'chart-flowtime',    x: 0,  y: 18, w: 6,  h: 8,  minH: 3 },
+  { i: 'chart-flowdist',    x: 6,  y: 18, w: 6,  h: 8,  minH: 3 },
+  { i: 'pi-table',          x: 0,  y: 26, w: 12, h: 10, minH: 3 },
 ];
 
 export default function DeliveryDashboard() {
@@ -340,6 +340,7 @@ export default function DeliveryDashboard() {
         activeWidgetIds={(rglLayout.rglItems || []).map(it => it.i)}
         isOpen={bankOpen}
         onClose={() => setBankOpen(false)}
+        onAdd={rglLayout.addWidget}
         style={{ order: 2 }}
       />
 

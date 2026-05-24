@@ -153,7 +153,7 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom, suppr
         margin={MARGIN}
         isDraggable={canEdit}
         isResizable={true}
-        isDroppable={canEdit}
+        isDroppable={isAdmin}
         droppingItem={{ i: '__dropping__', w: 6, h: 6 }}
         onDrop={handleDrop}
         onLayoutChange={onLayoutChange}

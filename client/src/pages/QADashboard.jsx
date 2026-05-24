@@ -47,12 +47,12 @@ function CardLabel({ children, textKey }) {
 }
 
 const QA_DEFAULT_LAYOUT = [
-  { i: 'traffic-lights',   x: 0, y: 0,  w: 12, h: 6,  minH: 4 },
-  { i: 'density-kpis',     x: 0, y: 6,  w: 12, h: 4,  minH: 3 },
-  { i: 'chart-trends',     x: 0, y: 10, w: 6,  h: 8,  minH: 5 },
-  { i: 'chart-density',    x: 6, y: 10, w: 6,  h: 8,  minH: 5 },
-  { i: 'squad-comparison', x: 0, y: 18, w: 12, h: 8,  minH: 5 },
-  { i: 'pi-table',         x: 0, y: 26, w: 12, h: 10, minH: 6 },
+  { i: 'traffic-lights',   x: 0, y: 0,  w: 12, h: 6,  minH: 2 },
+  { i: 'density-kpis',     x: 0, y: 6,  w: 12, h: 4,  minH: 2 },
+  { i: 'chart-trends',     x: 0, y: 10, w: 6,  h: 8,  minH: 3 },
+  { i: 'chart-density',    x: 6, y: 10, w: 6,  h: 8,  minH: 3 },
+  { i: 'squad-comparison', x: 0, y: 18, w: 12, h: 8,  minH: 3 },
+  { i: 'pi-table',         x: 0, y: 26, w: 12, h: 10, minH: 3 },
 ];
 
 export default function QADashboard() {
@@ -297,6 +297,7 @@ export default function QADashboard() {
         activeWidgetIds={(rglLayout.rglItems || []).map(it => it.i)}
         isOpen={bankOpen}
         onClose={() => setBankOpen(false)}
+        onAdd={rglLayout.addWidget}
         style={{ order: 2 }}
       />
 

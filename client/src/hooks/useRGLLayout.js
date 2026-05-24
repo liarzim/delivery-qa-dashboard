@@ -62,7 +62,7 @@ export function useRGLLayout(dashboardId, defaultItems) {
       w: placement.w ?? 6,
       h: placement.h ?? 6,
       minW: 2,
-      minH: 3,
+      minH: 2,
     };
     save([...rglItems, newItem]);
   }, [rglItems, save]);

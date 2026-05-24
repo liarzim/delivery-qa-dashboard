@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GripVertical, CheckCircle2, X, Layers, Trash2, Pencil } from 'lucide-react';
+import { GripVertical, CheckCircle2, X, Layers, Trash2, Pencil, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
 import { useLanguage } from '../context/LanguageContext';
 import { widgetApi } from '../services/widgetApi';
 
 // ── Single draggable item ──────────────────────────────────────────────────────
-function BankItem({ widget, isOnGrid, onDelete, onEdit }) {
+function BankItem({ widget, isOnGrid, onDelete, onEdit, onAdd }) {
   const [confirming, setConfirming] = useState(false);
 
   const handleDragStart = (e) => {
@@ -66,6 +66,16 @@ function BankItem({ widget, isOnGrid, onDelete, onEdit }) {
         <p className="text-xs truncate" style={{ color: 'rgba(237,240,254,0.4)' }}>{widget.category}</p>
       </div>
       {isOnGrid && <CheckCircle2 size={12} className="text-sigma-accent shrink-0" />}
+      {onAdd && !isOnGrid && (
+        <button
+          onClick={e => { e.stopPropagation(); onAdd(widget.id); }}
+          className="shrink-0 p-0.5 rounded opacity-60 hover:opacity-100 transition-opacity"
+          style={{ color: '#54E075' }}
+          title="Add to dashboard"
+        >
+          <Plus size={13} />
+        </button>
+      )}
       {onEdit && !isOnGrid && (
         <button
           onClick={e => { e.stopPropagation(); onEdit(widget.id); }}
@@ -101,7 +111,7 @@ function SectionTitle({ children }) {
 }
 
 // ── Main bank panel ────────────────────────────────────────────────────────────
-export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, style }) {
+export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, onAdd, style }) {
   const { user }                   = useAuth();
   const { customWidgets, refresh } = useWidgetBank();
   const { lang }                   = useLanguage();
@@ -172,7 +182,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
                 {isHe ? 'בנק ווידג\'טים' : 'Widget Bank'}
               </p>
               <p className="text-xs mt-0.5" style={{ color: 'rgba(237,240,254,0.4)' }}>
-                {isHe ? 'גרור להוספה לגריד' : 'Drag to add to grid'}
+                {isHe ? 'לחץ + או גרור להוספה' : 'Click + or drag to add'}
               </p>
             </div>
           </div>
@@ -212,6 +222,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
                         key={w.id}
                         widget={displayW}
                         isOnGrid={activeWidgetIds.includes(w.id)}
+                        onAdd={onAdd}
                       />
                     );
                   })}
@@ -234,6 +245,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
                         key={w.id}
                         widget={w}
                         isOnGrid={activeWidgetIds.includes(w.id)}
+                        onAdd={onAdd}
                         onDelete={isAdmin ? handleAdminDelete : undefined}
                         onEdit={isAdmin ? handleEdit : undefined}
                       />
@@ -252,6 +264,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
                         key={w.id}
                         widget={w}
                         isOnGrid={activeWidgetIds.includes(w.id)}
+                        onAdd={onAdd}
                         onEdit={handleEdit}
                       />
                     ))}

@@ -94,6 +94,7 @@ export default function SubDashboardPage() {
         activeWidgetIds={activeWidgetIds}
         isOpen={bankOpen}
         onClose={() => setBankOpen(false)}
+        onAdd={rglLayout.addWidget}
         style={{ order: 2 }}
       />
 
