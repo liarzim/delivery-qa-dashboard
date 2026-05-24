@@ -1,7 +1,7 @@
 # Dashboard Edit & Resize Bug Fixes — Design Spec
 
 **Date**: 2026-05-24  
-**Scope**: Two bugs in the react-grid-layout dashboard system
+**Scope**: Two bugs + one UX improvement in the react-grid-layout dashboard system
 
 ---
 
@@ -146,19 +146,79 @@ The tile still appears fully rounded in both modes.
 
 ---
 
+---
+
+## Improvement — Set as Default / Reset to Default feedback
+
+### Symptom
+When an admin clicks "Set as Default" or "Reset to Default", there is no visual
+confirmation. The operation happens silently (or fails silently), so the admin has no
+way to know if it worked.
+
+### Fix
+Add an inline toast notification that appears in the toolbar after either action
+completes. It auto-dismisses after 3 seconds.
+
+**States**: `{ text: string, type: 'success' | 'error' } | null`
+
+**Trigger**: after the async call resolves or rejects.
+
+**Visual**: a small pill to the left of the buttons, matching the existing badge
+palette — green for success, red for error.
+
+```jsx
+// State (per toolbar host — DashboardRGL OR MainDashboard)
+const [toast, setToast] = useState(null);
+const showToast = (text, type = 'success') => {
+  setToast({ text, type });
+  setTimeout(() => setToast(null), 3000);
+};
+
+// In the toolbar JSX (before the buttons)
+{toast && (
+  <span className="text-xs px-2 py-1 rounded-md transition-opacity"
+    style={{
+      backgroundColor: toast.type === 'success'
+        ? 'rgba(84,224,117,0.15)' : 'rgba(243,96,89,0.1)',
+      color:           toast.type === 'success' ? '#54E075' : '#F36059',
+      border: `1px solid ${toast.type === 'success'
+        ? 'rgba(84,224,117,0.35)' : 'rgba(243,96,89,0.25)'}`,
+    }}>
+    {toast.text}
+  </span>
+)}
+
+// Set as Default button handler
+onClick={async () => {
+  try   { await setAsMaster();   showToast('Default layout saved'); }
+  catch { showToast('Save failed', 'error'); }
+}}
+
+// Reset to Default button handler
+onClick={async () => {
+  try   { await resetToMaster(); showToast('Layout reset'); }
+  catch { showToast('Reset failed', 'error'); }
+}}
+```
+
+**Where this lives**:
+- In `DashboardRGL.jsx` for the built-in toolbar (Delivery, QA, sub-dashboards).
+- In `MainDashboard.jsx` for the externalized Overview toolbar.
+- Both are identical patterns — no shared hook needed (only two call sites).
+
+---
+
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `client/src/components/DashboardRGL.jsx` | Add `suppressToolbar` prop; restructure outer tile div |
-| `client/src/pages/MainDashboard.jsx` | Add edit controls to SectionHeader action; pass `suppressToolbar` |
+| `client/src/components/DashboardRGL.jsx` | Add `suppressToolbar` prop; restructure outer tile div; add toast to built-in toolbar |
+| `client/src/pages/MainDashboard.jsx` | Add edit controls + toast to SectionHeader action; pass `suppressToolbar` |
 | `client/src/index.css` | Override `.react-resizable-handle` CSS for visibility |
 
 ---
 
 ## Out of Scope
-- Delivery/QA/sub-dashboard pages — no changes
+- Delivery/QA/sub-dashboard pages — no layout or toolbar structure changes
 - Default layout `minH`/`minW` values — not changed (users can now actually resize, so
   the existing minimums can be assessed later if still too restrictive)
-- `Set as Default` / `Reset to Default` success feedback — separate improvement, not part
-  of this fix
