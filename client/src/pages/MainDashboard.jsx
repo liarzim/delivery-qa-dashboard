@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import WidgetBank from '../components/WidgetBank';
 import DashboardRGL from '../components/DashboardRGL';
@@ -7,9 +7,11 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import SubDashboardTabs from '../components/SubDashboardTabs';
 import WidgetSlotContent from '../components/WidgetSlotContent';
 import CustomWidgetRenderer from '../components/CustomWidgetRenderer';
-import { Layers } from 'lucide-react';
+import { Check, LayoutGrid, Layers, RotateCcw, Star } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
+import { useEditMode } from '../context/EditModeContext';
+import { useAuth } from '../context/AuthContext';
 import { useRGLLayout } from '../hooks/useRGLLayout';
 import { getTrafficLight, LIGHT_COLORS } from '../utils/thresholds';
 import { ALL_WIDGETS, DEFAULT_OVERVIEW_RGL_LAYOUT } from '../constants/widgets';
@@ -196,6 +198,22 @@ export default function MainDashboard() {
 
   const rglLayout = useRGLLayout('overview', DEFAULT_OVERVIEW_RGL_LAYOUT);
 
+  // ── Edit-mode controls (externalized — DashboardRGL toolbar is suppressed) ──
+  const { editMode, toggleEditMode } = useEditMode();
+  const { user } = useAuth();
+  const isAdmin  = user?.role === 'Admin';
+  const canEdit  = editMode && isAdmin;
+
+  // ── Toast notification for Set as Default / Reset to Default ─────────────
+  const toastTimer = useRef(null);
+  const [toast, setToast] = useState(null); // { text: string, type: 'success'|'error' }
+  const showToast = useCallback((text, type = 'success') => {
+    clearTimeout(toastTimer.current);
+    setToast({ text, type });
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  }, []);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
   const widgetMap = useMemo(() => {
     const map = {};
     for (const w of ALL_WIDGETS) {
@@ -255,14 +273,66 @@ export default function MainDashboard() {
           titleKey="overview.title"
           subtitle={t('overview_subtitle')}
           action={
-            <button
-              onClick={toggleBank}
-              className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
-              style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
-            >
-              <Layers size={13} />
-              {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Toast feedback pill */}
+              {toast && (
+                <span className="text-xs px-2 py-1 rounded-md"
+                  style={{
+                    backgroundColor: toast.type === 'success' ? 'rgba(84,224,117,0.15)' : 'rgba(243,96,89,0.1)',
+                    color:           toast.type === 'success' ? '#54E075' : '#F36059',
+                    border: `1px solid ${toast.type === 'success' ? 'rgba(84,224,117,0.35)' : 'rgba(243,96,89,0.25)'}`,
+                  }}>
+                  {toast.text}
+                </span>
+              )}
+              {/* Set as Default — edit mode only */}
+              {canEdit && (
+                <button
+                  onClick={async () => {
+                    try   { await rglLayout.setAsMaster();   showToast('Default layout saved'); }
+                    catch { showToast('Save failed', 'error'); }
+                  }}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
+                  style={{ backgroundColor: 'rgba(249,189,51,0.12)', color: '#F9BD33', border: '1px solid rgba(249,189,51,0.3)' }}
+                >
+                  <Star size={12} /> Set as Default
+                </button>
+              )}
+              {/* Reset to Default — outside edit mode when layout is customised */}
+              {rglLayout.hasCustom && !editMode && (
+                <button
+                  onClick={async () => {
+                    try   { await rglLayout.resetToMaster(); showToast('Layout reset'); }
+                    catch { showToast('Reset failed', 'error'); }
+                  }}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
+                  style={{ backgroundColor: 'rgba(243,96,89,0.1)', color: '#F36059', border: '1px solid rgba(243,96,89,0.25)' }}
+                >
+                  <RotateCcw size={12} /> Reset to Default
+                </button>
+              )}
+              {/* Edit Layout / Done */}
+              {isAdmin && (
+                <button
+                  onClick={toggleEditMode}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
+                  style={editMode
+                    ? { backgroundColor: 'rgba(84,224,117,0.15)', color: '#54E075', border: '1px solid rgba(84,224,117,0.35)' }
+                    : { backgroundColor: 'rgba(63,100,247,0.12)', color: 'rgba(237,240,254,0.7)', border: '1px solid rgba(63,100,247,0.3)' }}
+                >
+                  {editMode ? <><Check size={12} /> Done</> : <><LayoutGrid size={12} /> Edit Layout</>}
+                </button>
+              )}
+              {/* Add Widgets */}
+              <button
+                onClick={toggleBank}
+                className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
+                style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
+              >
+                <Layers size={13} />
+                {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
+              </button>
+            </div>
           }
         />
 
@@ -272,6 +342,7 @@ export default function MainDashboard() {
           rglLayout={rglLayout}
           widgetMap={widgetMap}
           renderCustom={renderCustom}
+          suppressToolbar
         />
       </div>
     </div>
