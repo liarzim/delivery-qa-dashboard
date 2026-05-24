@@ -21,3 +21,21 @@ export const DEFAULT_LAYOUT = [
   'committed-rate', 'overall-rate', 'avg-velocity',
   'reopen-pct', 'rejected-pct', 'escaping-pct',
 ];
+
+export const DEFAULT_SUB_RGL_LAYOUT = [
+  { i: 'committed-rate',  x: 0, y: 0, w: 4, h: 5, minW: 2, minH: 3 },
+  { i: 'overall-rate',    x: 4, y: 0, w: 4, h: 5, minW: 2, minH: 3 },
+  { i: 'avg-velocity',    x: 8, y: 0, w: 4, h: 5, minW: 2, minH: 3 },
+  { i: 'reopen-pct',      x: 0, y: 5, w: 4, h: 5, minW: 2, minH: 3 },
+  { i: 'rejected-pct',    x: 4, y: 5, w: 4, h: 5, minW: 2, minH: 3 },
+  { i: 'escaping-pct',    x: 8, y: 5, w: 4, h: 5, minW: 2, minH: 3 },
+];
+
+export const DEFAULT_OVERVIEW_RGL_LAYOUT = [
+  { i: 'committed-rate',  x: 0, y: 0, w: 4, h: 5, minW: 2, minH: 3 },
+  { i: 'overall-rate',    x: 4, y: 0, w: 4, h: 5, minW: 2, minH: 3 },
+  { i: 'avg-velocity',    x: 8, y: 0, w: 4, h: 5, minW: 2, minH: 3 },
+  { i: 'reopen-pct',      x: 0, y: 5, w: 4, h: 5, minW: 2, minH: 3 },
+  { i: 'rejected-pct',    x: 4, y: 5, w: 4, h: 5, minW: 2, minH: 3 },
+  { i: 'escaping-pct',    x: 8, y: 5, w: 4, h: 5, minW: 2, minH: 3 },
+];

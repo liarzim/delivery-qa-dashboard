@@ -210,11 +210,11 @@ export default function AppShell() {
         which causes the first flex child (sidebar) to appear on the right in RTL.
         NO JS flex-direction conditional needed.
       */}
-      <div className="min-h-screen flex">
+      <div className="h-screen overflow-hidden flex">
 
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <aside
-          className={`${collapsed ? 'w-16' : 'w-56'} flex flex-col transition-all duration-200 shrink-0`}
+          className={`${collapsed ? 'w-16' : 'w-56'} flex flex-col transition-all duration-200 shrink-0 overflow-y-auto`}
           style={{
             background: 'var(--p-sidebar-bg, rgba(255,255,255,0.055))',
             backdropFilter: 'blur(16px)',

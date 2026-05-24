@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { GripVertical, CheckCircle2, X, Layers, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { GripVertical, CheckCircle2, X, Layers, Trash2, Pencil } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
 import { useLanguage } from '../context/LanguageContext';
 import { widgetApi } from '../services/widgetApi';
 
 // ── Single draggable item ──────────────────────────────────────────────────────
-function BankItem({ widget, isOnGrid, onDelete }) {
+function BankItem({ widget, isOnGrid, onDelete, onEdit }) {
   const [confirming, setConfirming] = useState(false);
 
-  // HTML5 drag so react-grid-layout can receive the drop
   const handleDragStart = (e) => {
     e.dataTransfer.setData('widgetId', String(widget.id));
     e.dataTransfer.effectAllowed = 'copy';
@@ -19,7 +19,6 @@ function BankItem({ widget, isOnGrid, onDelete }) {
     ? 'rgba(20,65,245,0.04)'
     : 'rgba(20,65,245,0.08)';
 
-  // ── Confirm-delete mode ────────────────────────────────────────────────────
   if (confirming) {
     return (
       <div
@@ -67,6 +66,16 @@ function BankItem({ widget, isOnGrid, onDelete }) {
         <p className="text-xs truncate" style={{ color: 'rgba(237,240,254,0.4)' }}>{widget.category}</p>
       </div>
       {isOnGrid && <CheckCircle2 size={12} className="text-sigma-accent shrink-0" />}
+      {onEdit && !isOnGrid && (
+        <button
+          onClick={e => { e.stopPropagation(); onEdit(widget.id); }}
+          className="shrink-0 p-0.5 rounded opacity-40 hover:opacity-100 transition-opacity"
+          style={{ color: 'rgba(63,100,247,0.9)' }}
+          title="Edit widget"
+        >
+          <Pencil size={11} />
+        </button>
+      )}
       {onDelete && !isOnGrid && (
         <button
           onClick={e => { e.stopPropagation(); setConfirming(true); }}
@@ -98,6 +107,13 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
   const { lang }                   = useLanguage();
   const isHe                       = lang === 'he';
   const isAdmin                    = user?.role === 'Admin';
+
+  const navigate = useNavigate();
+
+  function handleEdit(compositeId) {
+    const numId = String(compositeId).replace('custom_', '');
+    navigate(`/widget-builder/${numId}`);
+  }
 
   // ── Built-in widgets: grouped by category ─────────────────────────────────
   const categories = [...new Set(widgets.map(w => w.category))];
@@ -219,6 +235,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
                         widget={w}
                         isOnGrid={activeWidgetIds.includes(w.id)}
                         onDelete={isAdmin ? handleAdminDelete : undefined}
+                        onEdit={isAdmin ? handleEdit : undefined}
                       />
                     ))}
                   </div>
@@ -235,6 +252,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
                         key={w.id}
                         widget={w}
                         isOnGrid={activeWidgetIds.includes(w.id)}
+                        onEdit={handleEdit}
                       />
                     ))}
                   </div>

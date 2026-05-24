@@ -21,7 +21,7 @@ import {
   Users, Sliders, Map, LayoutDashboard, Wrench, Check, X, Languages, FolderOpen,
   Upload, Download, Pencil,
 } from 'lucide-react';
-import { apiFetch } from '../lib/api';
+import { apiFetch, getToken } from '../lib/api';
 
 // ── Tiny shared input components ──────────────────────────────────────────────
 function SettingRow({ label, description, children }) {
@@ -94,6 +94,9 @@ export default function SettingsPage() {
   const [newSub, setNewSub]     = useState({ name_en: '', name_he: '', parentId: '', icon: 'LayoutDashboard' });
   const [pendingWidgets, setPendingWidgets] = useState([]);
   const [widgetActioning, setWidgetActioning] = useState(null); // id being approved/rejected
+  const [syncStatus, setSyncStatus] = useState(null); // null | 'exporting' | 'importing' | 'done' | 'error'
+  const [syncMsg, setSyncMsg]        = useState('');
+  const importInputRef               = React.useRef(null);
   const [newOverrideKey, setNewOverrideKey] = useState('');
   const [newOverrideEn, setNewOverrideEn] = useState('');
   const [newOverrideHe, setNewOverrideHe] = useState('');
@@ -142,6 +145,52 @@ export default function SettingsPage() {
       widgetApi.pending(user).then(setPendingWidgets).catch(() => {});
     } catch (e) { showToast(e.message, 'error'); }
     finally { setWidgetActioning(null); }
+  };
+
+  const handleExport = async () => {
+    setSyncStatus('exporting');
+    setSyncMsg('');
+    try {
+      const res = await fetch('/api/config/export', {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      const date = new Date().toISOString().slice(0, 10);
+      a.href     = url;
+      a.download = `system-config-${date}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setSyncStatus('done');
+      setSyncMsg('Export complete.');
+    } catch (err) {
+      setSyncStatus('error');
+      setSyncMsg(`Export failed: ${err.message}`);
+    }
+  };
+
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (importInputRef.current) importInputRef.current.value = '';
+    setSyncStatus('importing');
+    setSyncMsg('');
+    try {
+      const text    = await file.text();
+      const payload = JSON.parse(text);
+      const result  = await apiFetch('/api/config/import', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      setSyncStatus('done');
+      setSyncMsg(`Import complete (${result.imported.settings} settings, ${result.imported.widgets} widgets, ${result.imported.layouts} layouts) — reloading…`);
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      setSyncStatus('error');
+      setSyncMsg(`Import failed: ${err.message}`);
+    }
   };
 
   const showToast = (msg, type = 'success') => {
@@ -841,6 +890,45 @@ export default function SettingsPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* System Sync */}
+      <div style={cardStyle}>
+        <div className="flex items-center gap-2 mb-4">
+          <RefreshCw size={15} style={{ color: 'var(--p-accent)' }} />
+          <h3 style={sectionTitleStyle}>System Sync</h3>
+        </div>
+        <p className="text-xs mb-4" style={{ color: 'rgba(237,240,254,0.4)' }}>
+          Export all settings, approved widgets, and user layouts to a portable JSON file. Import on another machine to restore the same configuration. Note: the export file includes each user's personal layout preferences (widget positions and sizes) alongside global config.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleExport}
+            disabled={syncStatus === 'exporting' || syncStatus === 'importing'}
+            className="flex items-center gap-1.5 btn-secondary text-xs py-2 px-4 disabled:opacity-50"
+          >
+            <Download size={13} /> {syncStatus === 'exporting' ? 'Exporting…' : 'Export System Config'}
+          </button>
+
+          <label
+            className={`flex items-center gap-1.5 btn-secondary text-xs py-2 px-4 cursor-pointer ${syncStatus === 'exporting' || syncStatus === 'importing' ? 'opacity-50 pointer-events-none' : ''}`}
+          >
+            <Upload size={13} /> {syncStatus === 'importing' ? 'Importing…' : 'Import System Config'}
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleImport}
+              disabled={syncStatus === 'exporting' || syncStatus === 'importing'}
+            />
+          </label>
+        </div>
+        {syncMsg && (
+          <p className={`text-xs mt-3 ${syncStatus === 'error' ? 'text-sigma-red' : 'text-sigma-green'}`}>
+            {syncMsg}
+          </p>
+        )}
       </div>
 
       {/* User Management */}

@@ -1,5 +1,8 @@
 const jwt = require('jsonwebtoken');
 
+if (!process.env.JWT_SECRET) {
+  console.warn('[SECURITY] JWT_SECRET env var is not set — using insecure default. Set JWT_SECRET before deploying.');
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
 function requireAuth(req, res, next) {
