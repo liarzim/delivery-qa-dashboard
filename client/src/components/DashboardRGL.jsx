@@ -2,9 +2,13 @@
  * DashboardRGL — free-form 12-column grid for Delivery and QA dashboards.
  *
  * Props:
- *   rglLayout     — from useRGLLayout (the hook result object)
- *   widgetMap     — { [widgetId]: <JSX> }  built-in widgets rendered by caller
- *   renderCustom  — (widgetId: string) => <JSX>  called for 'custom_*' items
+ *   rglLayout        — from useRGLLayout (the hook result object)
+ *   widgetMap        — { [widgetId]: <JSX> }  built-in widgets rendered by caller
+ *   renderCustom     — (widgetId: string) => <JSX>  called for 'custom_*' items
+ *   suppressToolbar  — boolean (default false): when true the built-in toolbar
+ *                      (Edit Layout / Set as Default / Reset to Default) is not
+ *                      rendered. Used by Overview which hosts those controls in
+ *                      its own SectionHeader.
  */
 import React, { useRef, useState, useEffect } from 'react';
 import ReactGridLayout from 'react-grid-layout';
@@ -40,7 +44,7 @@ function useContainerWidth() {
   return { ref, width };
 }
 
-export default function DashboardRGL({ rglLayout, widgetMap, renderCustom }) {
+export default function DashboardRGL({ rglLayout, widgetMap, renderCustom, suppressToolbar = false }) {
   const { editMode, toggleEditMode } = useEditMode();
   const { user } = useAuth();
   const isAdmin = user?.role === 'Admin';
@@ -51,6 +55,15 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom }) {
     removeWidget, setAsMaster, resetToMaster,
     hasCustom, addWidget,
   } = rglLayout;
+
+  // ── Toast notification (Set as Default / Reset to Default feedback) ──────
+  const [toast, setToast] = useState(null); // { text: string, type: 'success' | 'error' }
+  const toastTimer = useRef(null);
+  const showToast = (text, type = 'success') => {
+    clearTimeout(toastTimer.current);
+    setToast({ text, type });
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  };
 
   const handleDrop = (_layout, item, e) => {
     const widgetId = e.dataTransfer?.getData('widgetId');
@@ -76,38 +89,57 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom }) {
 
   return (
     <div>
-      {/* Toolbar */}
-      <div className="flex items-center justify-end gap-2 flex-wrap mb-4">
-        {canEdit && isAdmin && (
-          <button
-            onClick={async () => { await setAsMaster(); }}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
-            style={{ backgroundColor: 'rgba(249,189,51,0.12)', color: '#F9BD33', border: '1px solid rgba(249,189,51,0.3)' }}
-          >
-            <Star size={12} /> Set as Default
-          </button>
-        )}
-        {hasCustom && !editMode && (
-          <button
-            onClick={resetToMaster}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
-            style={{ backgroundColor: 'rgba(243,96,89,0.1)', color: '#F36059', border: '1px solid rgba(243,96,89,0.25)' }}
-          >
-            <RotateCcw size={12} /> Reset to Default
-          </button>
-        )}
-        {isAdmin && (
-          <button
-            onClick={toggleEditMode}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
-            style={editMode
-              ? { backgroundColor: 'rgba(84,224,117,0.15)', color: '#54E075', border: '1px solid rgba(84,224,117,0.35)' }
-              : { backgroundColor: 'rgba(63,100,247,0.12)', color: 'rgba(237,240,254,0.7)', border: '1px solid rgba(63,100,247,0.3)' }}
-          >
-            {editMode ? <><Check size={12} /> Done</> : <><LayoutGrid size={12} /> Edit Layout</>}
-          </button>
-        )}
-      </div>
+      {/* Toolbar — hidden when suppressToolbar=true (caller hosts controls externally) */}
+      {!suppressToolbar && (
+        <div className="flex items-center justify-end gap-2 flex-wrap mb-4">
+          {/* Toast feedback pill */}
+          {toast && (
+            <span className="text-xs px-2 py-1 rounded-md"
+              style={{
+                backgroundColor: toast.type === 'success' ? 'rgba(84,224,117,0.15)' : 'rgba(243,96,89,0.1)',
+                color:           toast.type === 'success' ? '#54E075' : '#F36059',
+                border: `1px solid ${toast.type === 'success' ? 'rgba(84,224,117,0.35)' : 'rgba(243,96,89,0.25)'}`,
+              }}>
+              {toast.text}
+            </span>
+          )}
+          {canEdit && isAdmin && (
+            <button
+              onClick={async () => {
+                try   { await setAsMaster();   showToast('Default layout saved'); }
+                catch { showToast('Save failed', 'error'); }
+              }}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
+              style={{ backgroundColor: 'rgba(249,189,51,0.12)', color: '#F9BD33', border: '1px solid rgba(249,189,51,0.3)' }}
+            >
+              <Star size={12} /> Set as Default
+            </button>
+          )}
+          {hasCustom && !editMode && (
+            <button
+              onClick={async () => {
+                try   { await resetToMaster(); showToast('Layout reset'); }
+                catch { showToast('Reset failed', 'error'); }
+              }}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
+              style={{ backgroundColor: 'rgba(243,96,89,0.1)', color: '#F36059', border: '1px solid rgba(243,96,89,0.25)' }}
+            >
+              <RotateCcw size={12} /> Reset to Default
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              onClick={toggleEditMode}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
+              style={editMode
+                ? { backgroundColor: 'rgba(84,224,117,0.15)', color: '#54E075', border: '1px solid rgba(84,224,117,0.35)' }
+                : { backgroundColor: 'rgba(63,100,247,0.12)', color: 'rgba(237,240,254,0.7)', border: '1px solid rgba(63,100,247,0.3)' }}
+            >
+              {editMode ? <><Check size={12} /> Done</> : <><LayoutGrid size={12} /> Edit Layout</>}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Grid — ref div measures container width for RGL v2 */}
       <div ref={gridRef}>
@@ -131,16 +163,20 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom }) {
           <div
             key={item.i}
             style={{
-              overflow: 'hidden',
+              position: 'relative',          // ← containing block for resize handle
               outline: canEdit ? '1px dashed rgba(63,100,247,0.3)' : 'none',
               borderRadius: 12,
             }}
           >
-            {/* Drag handle + remove button — visible only in edit mode */}
+            {/* Drag handle — visible only in edit mode */}
             {canEdit && (
               <div
                 className="rgl-drag-handle flex items-center justify-between px-3 py-1.5 select-none cursor-grab active:cursor-grabbing"
-                style={{ backgroundColor: 'rgba(63,100,247,0.18)', borderBottom: '1px dashed rgba(63,100,247,0.3)' }}
+                style={{
+                  backgroundColor: 'rgba(63,100,247,0.18)',
+                  borderBottom: '1px dashed rgba(63,100,247,0.3)',
+                  borderRadius: '12px 12px 0 0',   // ← top corners rounded
+                }}
               >
                 <span className="text-xs font-semibold" style={{ color: 'rgba(237,240,254,0.5)' }}>
                   {item.i}
@@ -155,8 +191,12 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom }) {
                 </button>
               </div>
             )}
-            {/* Widget content */}
-            <div style={{ height: canEdit ? 'calc(100% - 32px)' : '100%' }}>
+            {/* Widget content — overflow:hidden lives here, not on outer div */}
+            <div style={{
+              height: canEdit ? 'calc(100% - 32px)' : '100%',
+              overflow: 'hidden',
+              borderRadius: canEdit ? '0 0 12px 12px' : 12,  // ← bottom-only in edit mode
+            }}>
               {renderSlot(item.i)}
             </div>
           </div>
