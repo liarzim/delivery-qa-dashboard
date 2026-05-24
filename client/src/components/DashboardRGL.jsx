@@ -104,7 +104,7 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom, suppr
               {toast.text}
             </span>
           )}
-          {canEdit && isAdmin && (
+          {canEdit && (
             <button
               onClick={async () => {
                 try   { await setAsMaster();   showToast('Default layout saved'); }
