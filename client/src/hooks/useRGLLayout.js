@@ -22,13 +22,21 @@ export function useRGLLayout(dashboardId, defaultItems) {
     hasCustom,
   } = useLayoutContext();
 
-  // Merge saved positions with defaults (new defaults not in saved are appended)
+  // Merge saved positions with defaults.
+  // If the user has a saved layout, respect it exactly — including deliberate
+  // widget removals.  Only append "new default" items when falling back to the
+  // master or the hard-coded default (i.e. the user has never saved a layout).
   const rglItems = useMemo(() => {
     const saved  = getLayout(dashboardId)?.rglItems;
     const master = getMaster(dashboardId)?.rglItems;
-    const base   = saved || master || defaultItems;
 
-    // Any default item not in base gets appended at the end
+    if (saved) {
+      // User has a persisted layout — use it verbatim so removed widgets stay gone.
+      return saved;
+    }
+
+    // No user layout yet: use master or default, then append any brand-new defaults.
+    const base = master || defaultItems;
     const knownIds = new Set(base.map(it => it.i));
     const extra = defaultItems.filter(it => !knownIds.has(it.i));
     return [...base, ...extra];

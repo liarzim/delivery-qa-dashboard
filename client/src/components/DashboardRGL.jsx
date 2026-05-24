@@ -158,6 +158,7 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom, suppr
         onDrop={handleDrop}
         onLayoutChange={onLayoutChange}
         draggableHandle=".rgl-drag-handle"
+        draggableCancel=".rgl-drag-cancel"
         style={{ minHeight: 200 }}
       >
         {rglItems.map((item) => (
@@ -184,7 +185,7 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom, suppr
                 </span>
                 <button
                   onClick={(e) => { e.stopPropagation(); removeWidget(item.i); }}
-                  className="p-0.5 rounded hover:bg-red-500/20"
+                  className="rgl-drag-cancel p-0.5 rounded hover:bg-red-500/20"
                   style={{ color: 'rgba(243,96,89,0.7)' }}
                   title="Remove from grid"
                 >
