@@ -87,47 +87,43 @@ export default function SubDashboardPage() {
   const activeWidgetIds = rglLayout.rglItems.map(item => item.i);
 
   return (
-    <div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">
-
+    <div>
       <WidgetBank
         widgets={ALL_WIDGETS}
         activeWidgetIds={activeWidgetIds}
         isOpen={bankOpen}
         onClose={() => setBankOpen(false)}
         onAdd={rglLayout.addWidget}
-        style={{ order: 2 }}
       />
 
-      <div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>
-        {subDash?.parentId && (() => {
-          const parentRoutes = { overview: '/', delivery: '/delivery', qa: '/qa' };
-          const parentLabels = { overview: t('nav_overview'), delivery: t('nav_delivery'), qa: t('nav_qa') };
-          const pp = parentRoutes[subDash.parentId];
-          const pl = parentLabels[subDash.parentId] || subDash.parentId;
-          return pp ? <SubDashboardTabs parentId={subDash.parentId} parentPath={pp} parentLabel={pl} /> : null;
-        })()}
+      {subDash?.parentId && (() => {
+        const parentRoutes = { overview: '/', delivery: '/delivery', qa: '/qa' };
+        const parentLabels = { overview: t('nav_overview'), delivery: t('nav_delivery'), qa: t('nav_qa') };
+        const pp = parentRoutes[subDash.parentId];
+        const pl = parentLabels[subDash.parentId] || subDash.parentId;
+        return pp ? <SubDashboardTabs parentId={subDash.parentId} parentPath={pp} parentLabel={pl} /> : null;
+      })()}
 
-        <SectionHeader
-          title={title}
-          subtitle={t('overview_subtitle')}
-          action={
-            <button
-              onClick={toggleBank}
-              className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
-              style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
-            >
-              <Layers size={13} />
-              {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
-            </button>
-          }
-        />
+      <SectionHeader
+        title={title}
+        subtitle={t('overview_subtitle')}
+        action={
+          <button
+            onClick={toggleBank}
+            className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
+            style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
+          >
+            <Layers size={13} />
+            {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
+          </button>
+        }
+      />
 
-        <DashboardRGL
-          rglLayout={rglLayout}
-          widgetMap={widgetMap}
-          renderCustom={renderCustom}
-        />
-      </div>
+      <DashboardRGL
+        rglLayout={rglLayout}
+        widgetMap={widgetMap}
+        renderCustom={renderCustom}
+      />
     </div>
   );
 }
