@@ -396,7 +396,7 @@ export default function AppShell() {
               </span>
             </div>
           </header>
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6">
             <Outlet />
           </div>
         </main>
