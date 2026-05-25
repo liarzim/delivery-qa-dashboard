@@ -86,10 +86,9 @@ export default function WidgetBuilderPage() {
     setTimeout(() => setToast(null), 3500);
   }, []);
 
-  // Fetch available sheets when delivery is selected
+  // Fetch available sheets whenever the data source changes
   useEffect(() => {
-    if (config.dataSource !== 'delivery') { setSheets([]); return; }
-    fetchSheets('delivery', user).then(setSheets).catch(() => setSheets([]));
+    fetchSheets(config.dataSource, user).then(setSheets).catch(() => setSheets([]));
   }, [config.dataSource, user]);
 
   // Load raw data whenever data source or sheet changes

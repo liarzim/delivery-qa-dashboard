@@ -7,6 +7,8 @@ All notable changes to this project are documented here.
 ## [Unreleased] — branch `claude/kind-haibt-e9100a`
 
 ### Fixed (post-release)
+- **Widget Builder sheet selector** — Sheet dropdown was hidden for three reasons: (1) backend `/api/data/raw/sheets/:source` returned `[]` for `qa_bugs` and `qa_escaping`; (2) the page only called `fetchSheets` when `dataSource === 'delivery'`; (3) the form only rendered the selector when `sheets.length > 1`. All three fixed: backend now reads sheet names from all three Excel sources, the page fetches sheets for any data source, and the selector appears whenever `sheets.length > 0`. Switching the data source also resets the sheet, xField, and yField fields.
+
 - **Hebrew/English parity** — Two RTL issues corrected: (1) WidgetBank used hardcoded `right: 0` which caused it to overlap the sidebar in RTL mode; changed to `insetInlineEnd: 0` (logical CSS) so the panel docks to the opposite side of the sidebar in both LTR and RTL. (2) "Add Widgets", "Hide Widgets", "Edit Layout", "Done", "Set as Default", "Reset to Default" button labels were hardcoded English in `MainDashboard`, `DeliveryDashboard`, `QADashboard`, and `DashboardRGL`; added translation keys and wired all buttons through `t()`. Hebrew drop-hint text corrected to say "from the left" (panel is on the left in RTL).
 
 - **Widget drag-to-position** — WidgetBank panel now sets `pointer-events: none` while a drag is in progress, letting `dragover`/`drop` events reach the grid underneath. Widgets can now be dragged from the bank and dropped at any position on the grid.
