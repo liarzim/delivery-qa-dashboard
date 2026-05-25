@@ -6,6 +6,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased] — branch `claude/kind-haibt-e9100a`
 
+### Fixed (post-release)
+- **Tile minimum height** — `minH` lowered from 2 → 1 across all default layouts, `addWidget`, and saved-layout remap. KPI tiles can now be resized to 1 grid row (80 px) instead of being floored at 2 rows (172 px). Existing saved layouts are remapped on load so no manual reset is required.
+- **Launcher deps** — `Launch App.vbs` and `Rebuild App.bat` now auto-install `server/node_modules` when missing, preventing the `Cannot find module 'dotenv'` startup error in fresh worktrees.
+
 ### Added
 - **WidgetBank fixed overlay** — WidgetBank now renders as `position: fixed` panel (top: 4rem, right: 0, z-index 40) instead of a flex sibling. Eliminates the `-m-6 h-[calc(100vh-4rem)]` layout hack across all dashboard pages.
 - **Overview edit controls in SectionHeader** — "Edit Layout / Done", "Set as Default", "Reset to Default", and toast feedback are now hosted in the SectionHeader action row on the Overview page. `DashboardRGL` on Overview receives `suppressToolbar={true}` so the built-in toolbar is hidden.
