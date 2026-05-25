@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import WidgetBank from '../components/WidgetBank';
 import DashboardRGL from '../components/DashboardRGL';
@@ -7,9 +7,11 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import SubDashboardTabs from '../components/SubDashboardTabs';
 import WidgetSlotContent from '../components/WidgetSlotContent';
 import CustomWidgetRenderer from '../components/CustomWidgetRenderer';
-import { Layers } from 'lucide-react';
+import { Layers, LayoutGrid, Check, Star, RotateCcw } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
+import { useEditMode } from '../context/EditModeContext';
+import { useAuth } from '../context/AuthContext';
 import { useRGLLayout } from '../hooks/useRGLLayout';
 import { getTrafficLight, LIGHT_COLORS } from '../utils/thresholds';
 import { ALL_WIDGETS, DEFAULT_OVERVIEW_RGL_LAYOUT } from '../constants/widgets';
@@ -234,47 +236,109 @@ export default function MainDashboard() {
 
   const activeWidgetIds = rglLayout.rglItems.map(item => item.i);
 
+  const { editMode, toggleEditMode } = useEditMode();
+  const { user }                     = useAuth();
+  const isAdmin  = user?.role === 'Admin';
+  const canEdit  = editMode && isAdmin;
+
+  const [toast, setToast]   = useState(null);
+  const toastTimer           = useRef(null);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+  const showToast = (text, type = 'success') => {
+    clearTimeout(toastTimer.current);
+    setToast({ text, type });
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  };
+
   if (dLoading || qLoading) return <LoadingSpinner message="Loading dashboard data…" />;
 
   return (
-    <div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">
-
+    <div>
       <WidgetBank
         widgets={ALL_WIDGETS}
         activeWidgetIds={activeWidgetIds}
         isOpen={bankOpen}
         onClose={() => setBankOpen(false)}
         onAdd={rglLayout.addWidget}
-        style={{ order: 2 }}
       />
 
-      <div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>
-        <SubDashboardTabs parentId="overview" parentPath="/" parentLabel={t('overview_title')} />
+      <SubDashboardTabs parentId="overview" parentPath="/" parentLabel={t('overview_title')} />
 
-        <SectionHeader
-          title={t('overview_title')}
-          titleKey="overview.title"
-          subtitle={t('overview_subtitle')}
-          action={
+      <SectionHeader
+        title={t('overview_title')}
+        titleKey="overview.title"
+        subtitle={t('overview_subtitle')}
+        action={
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={toggleBank}
               className="flex items-center gap-1.5 btn-secondary text-xs py-1.5"
               style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
             >
               <Layers size={13} />
-              {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
+              {bankOpen ? t('widget_bank_hide') : t('widget_bank_add')}
             </button>
-          }
-        />
 
-        <OverviewTrafficLights delivery={delivery} qa={qa} settings={settings} t={t} />
+            {toast && (
+              <span className="text-xs px-2 py-1 rounded-md"
+                style={{
+                  backgroundColor: toast.type === 'success' ? 'rgba(84,224,117,0.15)' : 'rgba(243,96,89,0.1)',
+                  color:           toast.type === 'success' ? '#54E075' : '#F36059',
+                  border: `1px solid ${toast.type === 'success' ? 'rgba(84,224,117,0.35)' : 'rgba(243,96,89,0.25)'}`,
+                }}>
+                {toast.text}
+              </span>
+            )}
 
-        <DashboardRGL
-          rglLayout={rglLayout}
-          widgetMap={widgetMap}
-          renderCustom={renderCustom}
-        />
-      </div>
+            {canEdit && (
+              <button
+                onClick={async () => {
+                  try   { await rglLayout.setAsMaster(); showToast('Default layout saved'); }
+                  catch { showToast('Save failed', 'error'); }
+                }}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
+                style={{ backgroundColor: 'rgba(249,189,51,0.12)', color: '#F9BD33', border: '1px solid rgba(249,189,51,0.3)' }}
+              >
+                <Star size={12} /> {t('set_as_default')}
+              </button>
+            )}
+
+            {rglLayout.hasCustom && !editMode && (
+              <button
+                onClick={async () => {
+                  try   { await rglLayout.resetToMaster(); showToast('Layout reset'); }
+                  catch { showToast('Reset failed', 'error'); }
+                }}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
+                style={{ backgroundColor: 'rgba(243,96,89,0.1)', color: '#F36059', border: '1px solid rgba(243,96,89,0.25)' }}
+              >
+                <RotateCcw size={12} /> {t('reset_to_default')}
+              </button>
+            )}
+
+            {isAdmin && (
+              <button
+                onClick={toggleEditMode}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
+                style={editMode
+                  ? { backgroundColor: 'rgba(84,224,117,0.15)', color: '#54E075', border: '1px solid rgba(84,224,117,0.35)' }
+                  : { backgroundColor: 'rgba(63,100,247,0.12)', color: 'rgba(237,240,254,0.7)', border: '1px solid rgba(63,100,247,0.3)' }}
+              >
+                {editMode ? <><Check size={12} /> {t('edit_layout_done')}</> : <><LayoutGrid size={12} /> {t('edit_layout')}</>}
+              </button>
+            )}
+          </div>
+        }
+      />
+
+      <OverviewTrafficLights delivery={delivery} qa={qa} settings={settings} t={t} />
+
+      <DashboardRGL
+        rglLayout={rglLayout}
+        widgetMap={widgetMap}
+        renderCustom={renderCustom}
+        suppressToolbar={true}
+      />
     </div>
   );
 }

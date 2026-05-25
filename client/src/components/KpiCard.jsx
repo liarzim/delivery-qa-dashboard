@@ -6,7 +6,7 @@ export default function KpiCard({ label, value, unit = '', light = 'neutral', su
   return (
     <div className={`card border ${c.border} ${c.bg} flex flex-col gap-1`}>
       <div className="flex items-start justify-between gap-2">
-        <span className="text-xs font-medium leading-tight" style={{ color: 'rgba(237,240,254,0.55)' }}>{label}</span>
+        <span className="font-medium leading-tight" style={{ color: 'rgba(237,240,254,0.55)', fontSize: 'var(--p-widget-title-size)' }}>{label}</span>
         <div className={`w-2 h-2 rounded-full ${c.dot} shrink-0 mt-0.5`} />
       </div>
       <div className={`text-2xl font-bold ${c.text} leading-none mt-1`}>

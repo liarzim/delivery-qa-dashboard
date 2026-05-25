@@ -32,7 +32,8 @@ export function useRGLLayout(dashboardId, defaultItems) {
 
     if (saved) {
       // User has a persisted layout — use it verbatim so removed widgets stay gone.
-      return saved;
+      // Override minH to 1 so old saved layouts don't block height reduction.
+      return saved.map(it => ({ ...it, minH: 1 }));
     }
 
     // No user layout yet: use master or default, then append any brand-new defaults.
@@ -62,7 +63,7 @@ export function useRGLLayout(dashboardId, defaultItems) {
       w: placement.w ?? 6,
       h: placement.h ?? 6,
       minW: 2,
-      minH: 2,
+      minH: 1,
     };
     save([...rglItems, newItem]);
   }, [rglItems, save]);

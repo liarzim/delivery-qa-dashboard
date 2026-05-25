@@ -86,6 +86,7 @@ function initDb() {
     ['squad_visibility', '{}'],
     ['pi_name_map', '{}'],
     ['title_overrides', '{}'],
+    ['widget_title_size', '12'],
   ];
 
   const upsert = db.prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)`);

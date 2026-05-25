@@ -34,6 +34,7 @@ export const DEFAULT_SETTINGS = {
   pi_name_map:               '{}',
   squad_visibility:          '{}',
   title_overrides:           '{}',
+  widget_title_size:         '12',
 };
 
 export function SettingsProvider({ children }) {
@@ -44,6 +45,13 @@ export function SettingsProvider({ children }) {
       .then(data => setSettings({ ...DEFAULT_SETTINGS, ...data }))
       .catch(() => {}); // Keep defaults if server unreachable
   }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--p-widget-title-size',
+      (settings.widget_title_size || 12) + 'px'
+    );
+  }, [settings.widget_title_size]);
 
   const updateSettings = async (updates) => {
     // Optimistic update so UI reflects changes instantly

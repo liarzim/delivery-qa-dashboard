@@ -19,7 +19,7 @@ import * as XLSX from 'xlsx';
 import {
   Save, RefreshCw, Plus, Trash2, AlertCircle, CheckCircle2,
   Users, Sliders, Map, LayoutDashboard, Wrench, Check, X, Languages, FolderOpen,
-  Upload, Download, Pencil,
+  Upload, Download, Pencil, SlidersHorizontal,
 } from 'lucide-react';
 import { apiFetch, getToken } from '../lib/api';
 
@@ -756,6 +756,30 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Display Settings */}
+      <div style={cardStyle}>
+        <div className="flex items-center gap-2 mb-4">
+          <SlidersHorizontal size={15} style={{ color: 'var(--p-accent)' }} />
+          <h3 style={sectionTitleStyle}>Display</h3>
+        </div>
+        <SettingRow label="Widget Label Size" description="Font size for widget labels and titles (px). Range: 8–32.">
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              min={8}
+              max={32}
+              step={1}
+              value={form.widget_title_size ?? 12}
+              onChange={e => setForm(f => ({ ...f, widget_title_size: e.target.value }))}
+              className="sigma-input"
+              style={{ width: '6rem' }}
+            />
+            <span className="text-xs" style={{ color: 'rgba(237,240,254,0.4)' }}>px</span>
+            <span className="text-xs" style={{ color: 'rgba(237,240,254,0.4)' }}>default: 12</span>
+          </div>
+        </SettingRow>
+      </div>
+
       {/* Save all */}
       <div className="flex justify-end">
         <button onClick={save} className="btn-primary flex items-center gap-2">
@@ -907,13 +931,13 @@ export default function SettingsPage() {
             disabled={syncStatus === 'exporting' || syncStatus === 'importing'}
             className="flex items-center gap-1.5 btn-secondary text-xs py-2 px-4 disabled:opacity-50"
           >
-            <Download size={13} /> {syncStatus === 'exporting' ? 'Exporting…' : 'Export System Config'}
+            <Download size={13} /> {syncStatus === 'exporting' ? 'Exporting…' : 'Export System Update'}
           </button>
 
           <label
             className={`flex items-center gap-1.5 btn-secondary text-xs py-2 px-4 cursor-pointer ${syncStatus === 'exporting' || syncStatus === 'importing' ? 'opacity-50 pointer-events-none' : ''}`}
           >
-            <Upload size={13} /> {syncStatus === 'importing' ? 'Importing…' : 'Import System Config'}
+            <Upload size={13} /> {syncStatus === 'importing' ? 'Importing…' : 'Import System Update'}
             <input
               ref={importInputRef}
               type="file"

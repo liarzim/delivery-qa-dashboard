@@ -43,13 +43,19 @@ function requireUser(req, res, next) {
   next();
 }
 
-// Return sheet names for a source (delivery only — CSVs have no sheets)
+// Return sheet names for any Excel source
 router.get('/sheets/:source', requireUser, (req, res) => {
   const { source } = req.params;
-  if (source !== 'delivery') return res.json([]);
   const s = getSettings();
+  const fileMap = {
+    delivery:    path.join(s.excel_path, s.delivery_file),
+    qa_bugs:     path.join(s.excel_path, s.qa_bug_file),
+    qa_escaping: path.join(s.excel_path, s.qa_escaping_file),
+  };
+  const filePath = fileMap[source];
+  if (!filePath) return res.json([]);
   try {
-    const wb = XLSX.readFile(path.join(s.excel_path, s.delivery_file));
+    const wb = XLSX.readFile(filePath);
     res.json(wb.SheetNames);
   } catch {
     res.json([]);

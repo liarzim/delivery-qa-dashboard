@@ -111,14 +111,17 @@ function SectionTitle({ children }) {
 }
 
 // ── Main bank panel ────────────────────────────────────────────────────────────
-export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, onAdd, style }) {
+export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, onAdd }) {
   const { user }                   = useAuth();
   const { customWidgets, refresh } = useWidgetBank();
   const { lang }                   = useLanguage();
   const isHe                       = lang === 'he';
   const isAdmin                    = user?.role === 'Admin';
+  const [dragging, setDragging]    = useState(false);
 
   const navigate = useNavigate();
+
+  if (!isOpen) return null;
 
   function handleEdit(compositeId) {
     const numId = String(compositeId).replace('custom_', '');
@@ -167,8 +170,20 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
 
   return (
     <aside
-      className={`shrink-0 transition-all duration-200 overflow-hidden ${isOpen ? 'w-60' : 'w-0'}`}
-      style={{ borderInlineStart: '1px solid var(--p-card-border)', backgroundColor: 'var(--p-sidebar-bg)', ...style }}
+      className="w-60 overflow-hidden"
+      onDragStart={() => setDragging(true)}
+      onDragEnd={() => setDragging(false)}
+      style={{
+        position: 'fixed',
+        top: '4rem',
+        insetInlineEnd: 0,
+        bottom: 0,
+        zIndex: 40,
+        pointerEvents: dragging ? 'none' : 'auto',
+        borderInlineStart: '1px solid var(--p-card-border)',
+        backgroundColor: 'var(--p-sidebar-bg)',
+        backdropFilter: 'blur(16px)',
+      }}
     >
       <div className="w-60 h-full flex flex-col">
 

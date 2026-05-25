@@ -8,7 +8,7 @@ export default function SectionHeader({ title, titleKey, subtitle, action }) {
         <h2 className="font-bold text-sigma-ice">
           {titleKey
             ? <EditableTitle titleKey={titleKey} defaultTitle={title} className="text-base" />
-            : <span className="text-base">{title}</span>}
+            : <span style={{ fontSize: 'calc(var(--p-widget-title-size, 12px) * 1.33)' }}>{title}</span>}
         </h2>
         {subtitle && <p className="text-xs mt-0.5" style={{ color: 'rgba(237,240,254,0.45)' }}>{subtitle}</p>}
       </div>
