@@ -180,7 +180,7 @@ export default function DashboardRGL({ rglLayout, widgetMap, renderCustom, suppr
                   borderRadius: '12px 12px 0 0',   // ← top corners rounded
                 }}
               >
-                <span className="text-xs font-semibold" style={{ color: 'rgba(237,240,254,0.5)' }}>
+                <span className="font-semibold" style={{ color: 'rgba(237,240,254,0.5)', fontSize: 'var(--p-widget-title-size)' }}>
                   {item.i}
                 </span>
                 <button

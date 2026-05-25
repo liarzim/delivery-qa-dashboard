@@ -38,12 +38,16 @@ function CardLabel({ children, textKey }) {
         textKey={textKey}
         fallback={typeof children === 'string' ? children : ''}
         tag="p"
-        className="text-xs font-semibold mb-4"
-        style={{ color: 'rgba(237,240,254,0.5)' }}
+        className="font-semibold mb-4"
+        style={{ color: 'rgba(237,240,254,0.5)', fontSize: 'var(--p-widget-title-size)' }}
       />
     );
   }
-  return <p className="text-xs font-semibold mb-4" style={{ color: 'rgba(237,240,254,0.5)' }}>{children}</p>;
+  return (
+    <p className="font-semibold mb-4" style={{ color: 'rgba(237,240,254,0.5)', fontSize: 'var(--p-widget-title-size)' }}>
+      {children}
+    </p>
+  );
 }
 
 const WIDGETS = [
