@@ -7,6 +7,8 @@ All notable changes to this project are documented here.
 ## [Unreleased] — branch `claude/kind-haibt-e9100a`
 
 ### Fixed (post-release)
+- **Widget drag-to-position** — WidgetBank panel now sets `pointer-events: none` while a drag is in progress, letting `dragover`/`drop` events reach the grid underneath. Widgets can now be dragged from the bank and dropped at any position on the grid.
+
 - **Tile minimum height** — `minH` lowered from 2 → 1 across all default layouts, `addWidget`, and saved-layout remap. KPI tiles can now be resized to 1 grid row (80 px) instead of being floored at 2 rows (172 px). Existing saved layouts are remapped on load so no manual reset is required.
 - **Launcher deps** — `Launch App.vbs` and `Rebuild App.bat` now auto-install `server/node_modules` when missing, preventing the `Cannot find module 'dotenv'` startup error in fresh worktrees.
 
