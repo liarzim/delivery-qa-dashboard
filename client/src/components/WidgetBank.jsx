@@ -117,6 +117,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
   const { lang }                   = useLanguage();
   const isHe                       = lang === 'he';
   const isAdmin                    = user?.role === 'Admin';
+  const [dragging, setDragging]    = useState(false);
 
   const navigate = useNavigate();
 
@@ -170,12 +171,15 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
   return (
     <aside
       className="w-60 overflow-hidden"
+      onDragStart={() => setDragging(true)}
+      onDragEnd={() => setDragging(false)}
       style={{
         position: 'fixed',
         top: '4rem',
         right: 0,
         bottom: 0,
         zIndex: 40,
+        pointerEvents: dragging ? 'none' : 'auto',
         borderInlineStart: '1px solid var(--p-card-border)',
         backgroundColor: 'var(--p-sidebar-bg)',
         backdropFilter: 'blur(16px)',
