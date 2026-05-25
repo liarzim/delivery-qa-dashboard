@@ -1,6 +1,6 @@
-# Unified Dashboard Architecture & UI Updates — Implementation Plan
+﻿# Unified Dashboard Architecture & UI Updates â€” Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Rename export/import buttons, convert the WidgetBank to a fixed overlay, clean up the flex-wrapper layout hack from all dashboard pages, add an Edit Layout toolbar to Overview, and add an admin-configurable global widget title font size.
 
@@ -15,7 +15,7 @@
 | File | What changes |
 |------|-------------|
 | `client/src/pages/SettingsPage.jsx` | Rename 2 button labels; add widget title size number input |
-| `client/src/components/AppShell.jsx` | `overflow-auto` → `overflow-y-auto` on inner content div |
+| `client/src/components/AppShell.jsx` | `overflow-auto` â†’ `overflow-y-auto` on inner content div |
 | `client/src/components/WidgetBank.jsx` | Remove flex-sibling styles; become a `position:fixed` overlay |
 | `client/src/pages/MainDashboard.jsx` | Remove flex wrapper; add edit controls in SectionHeader; `suppressToolbar={true}` |
 | `client/src/pages/DeliveryDashboard.jsx` | Remove flex wrapper; CardLabel uses CSS variable |
@@ -35,33 +35,33 @@
 **Files:**
 - Modify: `client/src/pages/SettingsPage.jsx`
 
-- [ ] **Step 1: Find the two button labels**
+- [x] **Step 1: Find the two button labels**
 
 Open `client/src/pages/SettingsPage.jsx`. Search for the string `"Export System Config"` (around line 910) and `"Import System Config"` (a few lines below it). They are inside the "System Sync" card.
 
-- [ ] **Step 2: Update the Export button label**
+- [x] **Step 2: Update the Export button label**
 
 In the `<button>` that calls `handleExport`, change:
 ```jsx
 // BEFORE (around line 910):
-{syncStatus === 'exporting' ? 'Exporting…' : 'Export System Config'}
+{syncStatus === 'exporting' ? 'Exportingâ€¦' : 'Export System Config'}
 
 // AFTER:
-{syncStatus === 'exporting' ? 'Exporting…' : 'Export System Update'}
+{syncStatus === 'exporting' ? 'Exportingâ€¦' : 'Export System Update'}
 ```
 
-- [ ] **Step 3: Update the Import label**
+- [x] **Step 3: Update the Import label**
 
 In the `<label>` wrapping the import file input, change:
 ```jsx
 // BEFORE:
-{syncStatus === 'importing' ? 'Importing…' : 'Import System Config'}
+{syncStatus === 'importing' ? 'Importingâ€¦' : 'Import System Config'}
 
 // AFTER:
-{syncStatus === 'importing' ? 'Importing…' : 'Import System Update'}
+{syncStatus === 'importing' ? 'Importingâ€¦' : 'Import System Update'}
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add client/src/pages/SettingsPage.jsx
@@ -70,19 +70,19 @@ git commit -m "feat: rename export/import buttons to System Update"
 
 ---
 
-## Task 2: AppShell — independent scroll fix
+## Task 2: AppShell â€” independent scroll fix
 
 **Files:**
 - Modify: `client/src/components/AppShell.jsx`
 
-- [ ] **Step 1: Find the inner content div**
+- [x] **Step 1: Find the inner content div**
 
 In `client/src/components/AppShell.jsx`, find the div just before `<Outlet />` (around line 399). It currently reads:
 ```jsx
 <div className="flex-1 overflow-auto p-6">
 ```
 
-- [ ] **Step 2: Change overflow-auto to overflow-y-auto**
+- [x] **Step 2: Change overflow-auto to overflow-y-auto**
 
 ```jsx
 // BEFORE:
@@ -94,7 +94,7 @@ In `client/src/components/AppShell.jsx`, find the div just before `<Outlet />` (
 
 This prevents horizontal scroll bleed from page content. The sidebar already has its own `overflow-y-auto`; now the main content pane explicitly scrolls only vertically.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add client/src/components/AppShell.jsx
@@ -103,12 +103,12 @@ git commit -m "fix: main content pane uses overflow-y-auto for independent scrol
 
 ---
 
-## Task 3: WidgetBank — convert to fixed overlay
+## Task 3: WidgetBank â€” convert to fixed overlay
 
 **Files:**
 - Modify: `client/src/components/WidgetBank.jsx`
 
-- [ ] **Step 1: Remove the `style` prop from the component signature**
+- [x] **Step 1: Remove the `style` prop from the component signature**
 
 The `style` prop was used to pass `order: 2` from dashboard pages (flex-sibling trick). It's no longer needed.
 
@@ -121,7 +121,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
 export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, onAdd }) {
 ```
 
-- [ ] **Step 2: Add early return when closed**
+- [x] **Step 2: Add early return when closed**
 
 The current component collapses to `w-0` when `!isOpen`. For the fixed overlay, we simply don't render it when closed. Add this line right after the last hook call inside the component body (before the `return`):
 
@@ -130,7 +130,7 @@ The current component collapses to `w-0` when `!isOpen`. For the fixed overlay, 
 if (!isOpen) return null;
 ```
 
-- [ ] **Step 3: Change the `<aside>` to fixed positioning**
+- [x] **Step 3: Change the `<aside>` to fixed positioning**
 
 Find the `return (` block (around line 168). Replace the `<aside>` opening tag:
 
@@ -159,7 +159,7 @@ Find the `return (` block (around line 168). Replace the `<aside>` opening tag:
 
 `top: '4rem'` aligns the panel beneath the 64px AppShell header. `zIndex: 40` floats it above the grid content.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add client/src/components/WidgetBank.jsx
@@ -168,12 +168,12 @@ git commit -m "feat: convert WidgetBank to position:fixed overlay panel"
 
 ---
 
-## Task 4: MainDashboard — remove flex wrapper + add edit controls
+## Task 4: MainDashboard â€” remove flex wrapper + add edit controls
 
 **Files:**
 - Modify: `client/src/pages/MainDashboard.jsx`
 
-- [ ] **Step 1: Update React import to include hooks needed for toast**
+- [x] **Step 1: Update React import to include hooks needed for toast**
 
 Find the top import (line 1):
 ```jsx
@@ -184,7 +184,7 @@ import React, { useCallback, useMemo } from 'react';
 import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 ```
 
-- [ ] **Step 2: Add missing context and icon imports**
+- [x] **Step 2: Add missing context and icon imports**
 
 After the existing `import { Layers } from 'lucide-react';` line, add:
 ```jsx
@@ -195,7 +195,7 @@ import { useAuth } from '../context/AuthContext';
 
 (Replace the single `{ Layers }` import with the expanded version.)
 
-- [ ] **Step 3: Add edit-mode state inside MainDashboard**
+- [x] **Step 3: Add edit-mode state inside MainDashboard**
 
 Inside the `MainDashboard` function body, after the existing hook calls, add:
 ```jsx
@@ -214,7 +214,7 @@ const showToast = (text, type = 'success') => {
 };
 ```
 
-- [ ] **Step 4: Build the toolbar action element**
+- [x] **Step 4: Build the toolbar action element**
 
 Replace the `return` statement's JSX. The current structure wraps everything in `<div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">`. Remove that wrapper and move WidgetBank out of the flex container. Also build the new `action` element for SectionHeader.
 
@@ -349,7 +349,7 @@ return (
 );
 ```
 
-- [ ] **Step 5: Verify visually**
+- [x] **Step 5: Verify visually**
 
 Start the app. Log in as Admin. Navigate to Overview. Confirm:
 - The page scrolls inside AppShell's content pane (not the whole page)
@@ -357,7 +357,7 @@ Start the app. Log in as Admin. Navigate to Overview. Confirm:
 - Clicking "Edit Layout" toggles drag mode on the grid; "Done" exits it
 - "Add Widgets" opens the WidgetBank as a fixed right panel overlaying the grid
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add client/src/pages/MainDashboard.jsx
@@ -366,12 +366,12 @@ git commit -m "feat: elevate Overview edit controls to SectionHeader, remove fle
 
 ---
 
-## Task 5: DeliveryDashboard — remove flex wrapper
+## Task 5: DeliveryDashboard â€” remove flex wrapper
 
 **Files:**
 - Modify: `client/src/pages/DeliveryDashboard.jsx`
 
-- [ ] **Step 1: Find the flex wrapper in the return statement**
+- [x] **Step 1: Find the flex wrapper in the return statement**
 
 Search for `flex gap-0 -m-6` in `DeliveryDashboard.jsx`. The return is structured:
 ```jsx
@@ -388,9 +388,9 @@ return (
 );
 ```
 
-- [ ] **Step 2: Remove the flex wrapper**
+- [x] **Step 2: Remove the flex wrapper**
 
-Replace the outer structure with a flat div. Remove `style={{ order: 2 }}` from WidgetBank, and remove the inner `<div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>` wrapper (but keep its children — they move up one level):
+Replace the outer structure with a flat div. Remove `style={{ order: 2 }}` from WidgetBank, and remove the inner `<div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>` wrapper (but keep its children â€” they move up one level):
 
 ```jsx
 // AFTER:
@@ -403,7 +403,7 @@ return (
       onClose={() => setBankOpen(false)}
       onAdd={rglLayout.addWidget}
     />
-    {/* all the existing inner content — SubDashboardTabs, SectionHeader, DashboardRGL, etc. */}
+    {/* all the existing inner content â€” SubDashboardTabs, SectionHeader, DashboardRGL, etc. */}
     ...
   </div>
 );
@@ -411,7 +411,7 @@ return (
 
 Keep all existing content inside the flat `<div>` exactly as-is; just remove the outer flex wrapper and the inner wrapper div.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add client/src/pages/DeliveryDashboard.jsx
@@ -420,20 +420,20 @@ git commit -m "fix: remove flex wrapper hack from DeliveryDashboard"
 
 ---
 
-## Task 6: QADashboard — remove flex wrapper
+## Task 6: QADashboard â€” remove flex wrapper
 
 **Files:**
 - Modify: `client/src/pages/QADashboard.jsx`
 
-- [ ] **Step 1: Find the flex wrapper**
+- [x] **Step 1: Find the flex wrapper**
 
 Search for `flex gap-0 -m-6` in `QADashboard.jsx` (around line 293).
 
-- [ ] **Step 2: Apply the same removal as Task 5**
+- [x] **Step 2: Apply the same removal as Task 5**
 
 Identical pattern to DeliveryDashboard: remove the outer `<div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">`, remove `style={{ order: 2 }}` from WidgetBank, and remove the inner `<div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>` wrapper while keeping its children.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add client/src/pages/QADashboard.jsx
@@ -442,12 +442,12 @@ git commit -m "fix: remove flex wrapper hack from QADashboard"
 
 ---
 
-## Task 7: SubDashboardPage — remove flex wrapper
+## Task 7: SubDashboardPage â€” remove flex wrapper
 
 **Files:**
 - Modify: `client/src/pages/SubDashboardPage.jsx`
 
-- [ ] **Step 1: Find the flex wrapper**
+- [x] **Step 1: Find the flex wrapper**
 
 The wrapper is at line 90 in `SubDashboardPage.jsx`:
 ```jsx
@@ -466,7 +466,7 @@ The wrapper is at line 90 in `SubDashboardPage.jsx`:
 </div>
 ```
 
-- [ ] **Step 2: Remove the wrapper**
+- [x] **Step 2: Remove the wrapper**
 
 ```jsx
 // AFTER:
@@ -486,7 +486,7 @@ The wrapper is at line 90 in `SubDashboardPage.jsx`:
 
 Remove `style={{ order: 2 }}` from WidgetBank. Remove the inner `<div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>` but keep all its children in place.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add client/src/pages/SubDashboardPage.jsx
@@ -495,13 +495,13 @@ git commit -m "fix: remove flex wrapper hack from SubDashboardPage"
 
 ---
 
-## Task 8: Backend — add widget_title_size setting
+## Task 8: Backend â€” add widget_title_size setting
 
 **Files:**
 - Modify: `server/src/db/init.js`
 - Modify: `server/src/routes/config.js`
 
-- [ ] **Step 1: Add the default in init.js**
+- [x] **Step 1: Add the default in init.js**
 
 In `server/src/db/init.js`, find the `defaults` array (around line 63). Add this entry:
 ```js
@@ -509,18 +509,18 @@ In `server/src/db/init.js`, find the `defaults` array (around line 63). Add this
 ['widget_title_size', '12'],
 ```
 
-- [ ] **Step 2: Add to KNOWN_SETTINGS_KEYS in config.js**
+- [x] **Step 2: Add to KNOWN_SETTINGS_KEYS in config.js**
 
 In `server/src/routes/config.js`, find `KNOWN_SETTINGS_KEYS` (around line 7). Add `'widget_title_size'` to the Set:
 ```js
 const KNOWN_SETTINGS_KEYS = new Set([
   // ... existing keys ...
   'squad_visibility', 'pi_name_map', 'title_overrides', 'master_layout',
-  'widget_title_size',   // ← add this
+  'widget_title_size',   // â† add this
 ]);
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add server/src/db/init.js server/src/routes/config.js
@@ -529,23 +529,23 @@ git commit -m "feat: add widget_title_size setting to DB defaults and config all
 
 ---
 
-## Task 9: SettingsContext — apply CSS variable on change
+## Task 9: SettingsContext â€” apply CSS variable on change
 
 **Files:**
 - Modify: `client/src/context/SettingsContext.jsx`
 
-- [ ] **Step 1: Add widget_title_size to DEFAULT_SETTINGS**
+- [x] **Step 1: Add widget_title_size to DEFAULT_SETTINGS**
 
 In `client/src/context/SettingsContext.jsx`, find `DEFAULT_SETTINGS` (around line 11). Add:
 ```js
 export const DEFAULT_SETTINGS = {
   // ... existing keys ...
   title_overrides:           '{}',
-  widget_title_size:         '12',   // ← add this
+  widget_title_size:         '12',   // â† add this
 };
 ```
 
-- [ ] **Step 2: Apply CSS variable whenever the setting changes**
+- [x] **Step 2: Apply CSS variable whenever the setting changes**
 
 Inside the `SettingsProvider` function, add a `useEffect` after the existing one (around line 43):
 ```jsx
@@ -557,7 +557,7 @@ useEffect(() => {
 }, [settings.widget_title_size]);
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add client/src/context/SettingsContext.jsx
@@ -566,12 +566,12 @@ git commit -m "feat: apply --p-widget-title-size CSS variable from settings"
 
 ---
 
-## Task 10: SettingsPage — add widget title size input
+## Task 10: SettingsPage â€” add widget title size input
 
 **Files:**
 - Modify: `client/src/pages/SettingsPage.jsx`
 
-- [ ] **Step 1: Add a Display card before the Save All button**
+- [x] **Step 1: Add a Display card before the Save All button**
 
 In `client/src/pages/SettingsPage.jsx`, find the "Save all" section (the `<div className="flex justify-end">` with the Save button, around line 760). Insert a new card immediately above it:
 
@@ -582,7 +582,7 @@ In `client/src/pages/SettingsPage.jsx`, find the "Save all" section (the `<div c
     <SlidersHorizontal size={15} style={{ color: 'var(--p-accent)' }} />
     <h3 style={sectionTitleStyle}>Display</h3>
   </div>
-  <SettingRow label="Widget Label Size" description="Font size for widget labels and titles (px). Range: 8–32.">
+  <SettingRow label="Widget Label Size" description="Font size for widget labels and titles (px). Range: 8â€“32.">
     <div className="flex items-center gap-3">
       <input
         type="number"
@@ -603,7 +603,7 @@ In `client/src/pages/SettingsPage.jsx`, find the "Save all" section (the `<div c
 
 `SlidersHorizontal` is already imported in SettingsPage. `cardStyle` and `sectionTitleStyle` are already defined in the component.
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add client/src/pages/SettingsPage.jsx
@@ -621,7 +621,7 @@ git commit -m "feat: add widget label size input to Settings Display card"
 - Modify: `client/src/pages/DeliveryDashboard.jsx`
 - Modify: `client/src/pages/QADashboard.jsx`
 
-- [ ] **Step 1: KpiCard — label span**
+- [x] **Step 1: KpiCard â€” label span**
 
 In `client/src/components/KpiCard.jsx` (line 9), the label `<span>` currently has `className="text-xs font-medium leading-tight"`. Add an inline `fontSize` style:
 
@@ -633,9 +633,9 @@ In `client/src/components/KpiCard.jsx` (line 9), the label `<span>` currently ha
 <span className="font-medium leading-tight" style={{ color: 'rgba(237,240,254,0.55)', fontSize: 'var(--p-widget-title-size)' }}>{label}</span>
 ```
 
-Remove `text-xs` (it sets `font-size: 0.75rem` which would override the inline style — since inline styles win over classes, actually keeping `text-xs` is harmless, but removing it is cleaner).
+Remove `text-xs` (it sets `font-size: 0.75rem` which would override the inline style â€” since inline styles win over classes, actually keeping `text-xs` is harmless, but removing it is cleaner).
 
-- [ ] **Step 2: SectionHeader — h2 title**
+- [x] **Step 2: SectionHeader â€” h2 title**
 
 In `client/src/components/SectionHeader.jsx` (line 8), the `<h2>` currently has `className="font-bold text-sigma-ice"`. Apply the CSS variable via inline style:
 
@@ -657,7 +657,7 @@ In `client/src/components/SectionHeader.jsx` (line 8), the `<h2>` currently has 
 
 Note: `EditableTitle` manages its own font size via its floating toolbar; the global CSS variable is applied to the fallback `<span>` (pages without `titleKey`). EditableTitle sections are controlled per-title by the Admin toolbar.
 
-- [ ] **Step 3: DashboardRGL — drag handle label**
+- [x] **Step 3: DashboardRGL â€” drag handle label**
 
 In `client/src/components/DashboardRGL.jsx`, find the drag handle label `<span>` (around line 183) that shows `item.i`. Add a `fontSize` style:
 
@@ -673,7 +673,7 @@ In `client/src/components/DashboardRGL.jsx`, find the drag handle label `<span>`
 </span>
 ```
 
-- [ ] **Step 4: DeliveryDashboard — CardLabel component**
+- [x] **Step 4: DeliveryDashboard â€” CardLabel component**
 
 In `client/src/pages/DeliveryDashboard.jsx`, the local `CardLabel` function (around line 34) renders a `<p>` with `className="text-xs font-semibold mb-4"`. Add the CSS variable:
 
@@ -715,20 +715,20 @@ function CardLabel({ children, textKey }) {
 }
 ```
 
-- [ ] **Step 5: QADashboard — CardLabel component**
+- [x] **Step 5: QADashboard â€” CardLabel component**
 
 `QADashboard.jsx` has an identical local `CardLabel` function (around line 34). Apply the exact same change as Step 4.
 
-- [ ] **Step 6: Verify visually**
+- [x] **Step 6: Verify visually**
 
-Start the app. Log in as Admin. Go to Settings → Display → set "Widget Label Size" to `18` and save. Confirm:
+Start the app. Log in as Admin. Go to Settings â†’ Display â†’ set "Widget Label Size" to `18` and save. Confirm:
 - KPI card labels are larger on Overview, Delivery, QA
 - Chart card labels (CardLabel) in Delivery and QA pages are larger
 - The drag handle labels in edit mode are larger
 - Section headers (fallback `<span>`) are larger
 - Resetting to `12` restores original size
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add client/src/components/KpiCard.jsx \
@@ -748,15 +748,15 @@ git commit -m "feat: apply --p-widget-title-size CSS variable to all widget labe
 | Netlify.toml removal | No-op (file doesn't exist) |
 | "Export System Update" label | Task 1 |
 | "Import System Update" label | Task 1 |
-| Import preserves personal widgets | Already implemented in backend — no code change |
-| AppShell `h-screen overflow-hidden` root | Already in place — verified in Task 2 |
+| Import preserves personal widgets | Already implemented in backend â€” no code change |
+| AppShell `h-screen overflow-hidden` root | Already in place â€” verified in Task 2 |
 | AppShell sidebar `overflow-y-auto` | Already in place |
 | AppShell main content `overflow-y-auto` | Task 2 |
 | WidgetBank as fixed overlay | Task 3 |
 | MainDashboard flex wrapper removed | Task 4 |
 | Overview Edit Layout controls in SectionHeader | Task 4 |
 | `suppressToolbar={true}` on Overview DashboardRGL | Task 4 |
-| `isResizable={true}` + resize CSS | Already implemented — no change needed |
+| `isResizable={true}` + resize CSS | Already implemented â€” no change needed |
 | DeliveryDashboard flex wrapper removed | Task 5 |
 | QADashboard flex wrapper removed | Task 6 |
 | SubDashboardPage flex wrapper removed | Task 7 |
