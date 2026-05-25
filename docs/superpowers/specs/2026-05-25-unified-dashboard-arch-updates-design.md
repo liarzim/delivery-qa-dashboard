@@ -149,20 +149,85 @@ AppShell's `overflow-y-auto p-6` div is now the only scroll container for the ma
 
 ---
 
+---
+
+## Item 5 — Apply Layout Cleanup to All Dashboard Pages
+
+`DeliveryDashboard.jsx`, `QADashboard.jsx`, and `SubDashboardPage.jsx` all have the identical `-m-6 h-[calc(100vh-4rem)]` flex wrapper. The same fix as Overview applies:
+
+- Remove `<div className="flex gap-0 -m-6 h-[calc(100vh-4rem)]">` wrapper
+- Remove `style={{ order: 2 }}` from `<WidgetBank>` call — fixed overlay applied inside `WidgetBank.jsx`
+- Remove inner `<div className="flex-1 overflow-y-auto p-6 min-w-0" style={{ order: 1 }}>` — AppShell's content div handles padding and scrolling
+- **DashboardRGL on these pages keeps `suppressToolbar` default `false`** — their built-in toolbar remains unchanged
+
+---
+
+## Item 6 — Admin-Configurable Global Widget Title Size
+
+### Mechanism
+
+A new setting `widget_title_size` (default `12`, range 8–32 px) stored in the DB. Applied as CSS custom property `--p-widget-title-size` on `document.documentElement`. All widget labels consume the variable; section headers scale proportionally at `1.33×`.
+
+### Backend
+
+| File | Change |
+|------|--------|
+| `server/src/db/init.js` | Add `['widget_title_size', '12']` to defaults array |
+| `server/src/routes/config.js` | Add `'widget_title_size'` to `KNOWN_SETTINGS_KEYS` |
+
+### Frontend
+
+**`client/src/context/SettingsContext.jsx`**
+- Add `widget_title_size: '12'` to `DEFAULT_SETTINGS`
+- Add a `useEffect` that applies the CSS variable whenever `settings.widget_title_size` changes:
+  ```js
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--p-widget-title-size',
+      (settings.widget_title_size || 12) + 'px'
+    );
+  }, [settings.widget_title_size]);
+  ```
+
+**`client/src/pages/SettingsPage.jsx`**
+- Add a "Display" section (or add to existing UI card) with a number input (range 8–32, step 1, unit `px`) for `widget_title_size`
+- Saves via the existing `updateSettings` path on "Save All"
+
+**`client/src/components/KpiCard.jsx`**
+- Label span: replace `className="text-xs"` with `style={{ fontSize: 'var(--p-widget-title-size)' }}`
+
+**`client/src/components/SectionHeader.jsx`**
+- Title: replace `text-base` with `style={{ fontSize: 'calc(var(--p-widget-title-size) * 1.33)' }}`
+
+**`client/src/components/DashboardRGL.jsx`**
+- Drag handle label: add `style={{ fontSize: 'var(--p-widget-title-size)' }}` to the `<span>` showing `item.i`
+
+**`client/src/pages/DeliveryDashboard.jsx`**
+- `CardLabel` component: add `style={{ fontSize: 'var(--p-widget-title-size)' }}` to the `<p>` element
+
+---
+
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `client/src/pages/SettingsPage.jsx` | Rename 2 button labels (Export/Import System Update) |
+| `client/src/pages/SettingsPage.jsx` | Rename 2 button labels; add widget title size input |
 | `client/src/components/AppShell.jsx` | `overflow-auto` → `overflow-y-auto` on inner content div |
 | `client/src/components/WidgetBank.jsx` | Convert panel to `position: fixed` overlay |
-| `client/src/pages/MainDashboard.jsx` | Remove flex wrapper hack; add edit controls + toast to SectionHeader; pass `suppressToolbar={true}` to DashboardRGL |
+| `client/src/pages/MainDashboard.jsx` | Remove flex wrapper hack; add edit controls + toast to SectionHeader; pass `suppressToolbar={true}` |
+| `client/src/pages/DeliveryDashboard.jsx` | Remove flex wrapper hack; `CardLabel` uses CSS variable |
+| `client/src/pages/QADashboard.jsx` | Remove flex wrapper hack |
+| `client/src/pages/SubDashboardPage.jsx` | Remove flex wrapper hack |
+| `client/src/context/SettingsContext.jsx` | Add `widget_title_size` default; apply CSS custom property |
+| `client/src/components/KpiCard.jsx` | Label font size uses `--p-widget-title-size` |
+| `client/src/components/SectionHeader.jsx` | Title font size uses `--p-widget-title-size` scaled |
+| `client/src/components/DashboardRGL.jsx` | Drag handle label uses `--p-widget-title-size` |
+| `server/src/db/init.js` | Add `widget_title_size` default |
+| `server/src/routes/config.js` | Add `widget_title_size` to `KNOWN_SETTINGS_KEYS` |
 
 ---
 
 ## Out of Scope
 
-- Delivery, QA, sub-dashboard pages — no layout changes
 - WidgetBankContext — no changes
-- Backend routes — no changes
 - Any Netlify configuration — file does not exist
