@@ -45,4 +45,10 @@ export default defineConfig({
     // when using `vite preview` without a Node server
     open: true,
   },
+
+  // ── Vitest ───────────────────────────────────────────────────────────────
+  test: {
+    environment: 'jsdom',
+    globals: true,
+  },
 });

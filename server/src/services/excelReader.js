@@ -269,3 +269,5 @@ function processQA(overrides = {}) {
 }
 
 module.exports = { processDelivery, processQA };
+
+module.exports._testHelpers = { safeNum, pct, median, extractPI, getSquad, isDone, isCommitted };
