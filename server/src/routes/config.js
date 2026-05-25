@@ -12,6 +12,7 @@ const KNOWN_SETTINGS_KEYS = new Set([
   'rejected_density_yellow', 'rejected_density_red', 'escaping_density_yellow', 'escaping_density_red',
   'commitment_yellow', 'commitment_red', 'weighted_yellow', 'weighted_red',
   'squad_visibility', 'pi_name_map', 'title_overrides', 'master_layout',
+  'widget_title_size',
 ]);
 
 // GET /api/config/export — admin only
