@@ -168,7 +168,13 @@ export default {
   overview_reset_layout: 'איפוס פריסה',
   overview_widgets: 'ווידג\'טים',
   overview_hide_widgets: 'הסתר',
-  overview_drop_hint: 'גרור ווידג\'טים מהלוח מימין להתחלה',
+  overview_drop_hint: 'גרור ווידג\'טים מהלוח משמאל להתחלה',
+  widget_bank_add: 'הוסף ווידג\'טים',
+  widget_bank_hide: 'הסתר ווידג\'טים',
+  edit_layout: 'ערוך פריסה',
+  edit_layout_done: 'סיום',
+  set_as_default: 'הגדר כברירת מחדל',
+  reset_to_default: 'אפס לברירת מחדל',
 
   // Messages
   error_server: 'לא ניתן להתחבר לשרת — ודא שהאפליקציה פועלת.',

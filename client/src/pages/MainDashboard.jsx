@@ -276,7 +276,7 @@ export default function MainDashboard() {
               style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
             >
               <Layers size={13} />
-              {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
+              {bankOpen ? t('widget_bank_hide') : t('widget_bank_add')}
             </button>
 
             {toast && (
@@ -299,7 +299,7 @@ export default function MainDashboard() {
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
                 style={{ backgroundColor: 'rgba(249,189,51,0.12)', color: '#F9BD33', border: '1px solid rgba(249,189,51,0.3)' }}
               >
-                <Star size={12} /> Set as Default
+                <Star size={12} /> {t('set_as_default')}
               </button>
             )}
 
@@ -312,7 +312,7 @@ export default function MainDashboard() {
                 className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
                 style={{ backgroundColor: 'rgba(243,96,89,0.1)', color: '#F36059', border: '1px solid rgba(243,96,89,0.25)' }}
               >
-                <RotateCcw size={12} /> Reset to Default
+                <RotateCcw size={12} /> {t('reset_to_default')}
               </button>
             )}
 
@@ -324,7 +324,7 @@ export default function MainDashboard() {
                   ? { backgroundColor: 'rgba(84,224,117,0.15)', color: '#54E075', border: '1px solid rgba(84,224,117,0.35)' }
                   : { backgroundColor: 'rgba(63,100,247,0.12)', color: 'rgba(237,240,254,0.7)', border: '1px solid rgba(63,100,247,0.3)' }}
               >
-                {editMode ? <><Check size={12} /> Done</> : <><LayoutGrid size={12} /> Edit Layout</>}
+                {editMode ? <><Check size={12} /> {t('edit_layout_done')}</> : <><LayoutGrid size={12} /> {t('edit_layout')}</>}
               </button>
             )}
           </div>

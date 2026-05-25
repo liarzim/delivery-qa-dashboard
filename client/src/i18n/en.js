@@ -169,6 +169,12 @@ export default {
   overview_widgets: 'Widgets',
   overview_hide_widgets: 'Hide',
   overview_drop_hint: 'Drag widgets from the panel on the right to get started',
+  widget_bank_add: 'Add Widgets',
+  widget_bank_hide: 'Hide Widgets',
+  edit_layout: 'Edit Layout',
+  edit_layout_done: 'Done',
+  set_as_default: 'Set as Default',
+  reset_to_default: 'Reset to Default',
 
   // Messages
   error_server: 'Cannot reach server — make sure the app is running.',

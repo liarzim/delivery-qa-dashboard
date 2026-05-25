@@ -315,7 +315,7 @@ export default function QADashboard() {
             style={bankOpen ? { backgroundColor: 'var(--p-accent)', color: '#fff', borderColor: 'var(--p-accent)' } : {}}
           >
             <Layers size={13} />
-            {bankOpen ? 'Hide Widgets' : 'Add Widgets'}
+            {bankOpen ? t('widget_bank_hide') : t('widget_bank_add')}
           </button>
         }
       />

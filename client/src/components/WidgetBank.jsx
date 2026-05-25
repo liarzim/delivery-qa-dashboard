@@ -176,7 +176,7 @@ export default function WidgetBank({ widgets, activeWidgetIds, isOpen, onClose, 
       style={{
         position: 'fixed',
         top: '4rem',
-        right: 0,
+        insetInlineEnd: 0,
         bottom: 0,
         zIndex: 40,
         pointerEvents: dragging ? 'none' : 'auto',
