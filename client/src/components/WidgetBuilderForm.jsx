@@ -109,11 +109,21 @@ export default function WidgetBuilderForm({ cfg, onChange, sheets = [], colMeta 
           <select className="sigma-input w-full" value={cfg.dataSource} onChange={e => onChange({ ...cfg, dataSource: e.target.value, sheet: '', xField: '', yField: '' })}>
             {DATA_SOURCES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
-          {sheets.length > 0 && (
+          <label className="block font-semibold" style={{ color: 'rgba(237,240,254,0.55)' }}>
+            Sheet
+          </label>
+          {sheets.length > 0 ? (
             <select className="sigma-input w-full" value={cfg.sheet} onChange={e => set('sheet', e.target.value)}>
               <option value="">— default sheet —</option>
               {sheets.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
+          ) : (
+            <input
+              className="sigma-input w-full"
+              value={cfg.sheet}
+              onChange={e => set('sheet', e.target.value)}
+              placeholder="Sheet name (leave blank for default)"
+            />
           )}
         </div>
       )}
