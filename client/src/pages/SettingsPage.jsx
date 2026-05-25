@@ -907,13 +907,13 @@ export default function SettingsPage() {
             disabled={syncStatus === 'exporting' || syncStatus === 'importing'}
             className="flex items-center gap-1.5 btn-secondary text-xs py-2 px-4 disabled:opacity-50"
           >
-            <Download size={13} /> {syncStatus === 'exporting' ? 'Exporting…' : 'Export System Config'}
+            <Download size={13} /> {syncStatus === 'exporting' ? 'Exporting…' : 'Export System Update'}
           </button>
 
           <label
             className={`flex items-center gap-1.5 btn-secondary text-xs py-2 px-4 cursor-pointer ${syncStatus === 'exporting' || syncStatus === 'importing' ? 'opacity-50 pointer-events-none' : ''}`}
           >
-            <Upload size={13} /> {syncStatus === 'importing' ? 'Importing…' : 'Import System Config'}
+            <Upload size={13} /> {syncStatus === 'importing' ? 'Importing…' : 'Import System Update'}
             <input
               ref={importInputRef}
               type="file"
