@@ -7,7 +7,7 @@ import './index.css';
 // ── Cache invalidation ────────────────────────────────────────────────────────
 // Bump APP_VERSION whenever the data schema or provider structure changes.
 // On mismatch the processed Excel cache is wiped so stale data never surfaces.
-const APP_VERSION = '2.4.12';
+const APP_VERSION = '2.4.13';
 const storedVersion = localStorage.getItem('app_version');
 if (storedVersion !== APP_VERSION) {
   // Clear processed Excel data (structure may have changed) but keep user
@@ -31,6 +31,22 @@ if (localStorage.getItem('seeded_delivery_subs') !== APP_VERSION) {
     const seededIds = new Set(DEFAULT_DELIVERY_SUBS.map(d => d.id));
     const merged = existing.filter(d => !seededIds.has(d.id)).concat(DEFAULT_DELIVERY_SUBS);
     localStorage.setItem('sub_dashboards', JSON.stringify(merged));
+
+    // Ensure sub-dashboard 900001 (מדדי עמידה בהתחייבות) has the
+    // commitment-status-dist widget in its layout cache.
+    const LAYOUT_CACHE_KEY = 'layout_server_cache';
+    const layoutCache = JSON.parse(localStorage.getItem(LAYOUT_CACHE_KEY) || '{}');
+    const sub901Items = layoutCache['sub_900001']?.rglItems;
+    const hasWidget = Array.isArray(sub901Items) && sub901Items.some(it => it.i === 'commitment-status-dist');
+    if (!hasWidget) {
+      const existing901 = Array.isArray(sub901Items) ? sub901Items : [];
+      const maxY = existing901.reduce((m, it) => Math.max(m, it.y + it.h), 0);
+      layoutCache['sub_900001'] = {
+        rglItems: [...existing901, { i: 'commitment-status-dist', x: 0, y: maxY, w: 8, h: 12, minW: 4, minH: 6 }],
+      };
+      localStorage.setItem(LAYOUT_CACHE_KEY, JSON.stringify(layoutCache));
+    }
+
     localStorage.setItem('seeded_delivery_subs', APP_VERSION);
   } catch { /* ignore quota errors */ }
 }
