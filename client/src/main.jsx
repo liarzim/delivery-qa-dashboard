@@ -7,18 +7,18 @@ import './index.css';
 // ── Cache invalidation ────────────────────────────────────────────────────────
 // Bump APP_VERSION whenever the data schema or provider structure changes.
 // On mismatch the processed Excel cache is wiped so stale data never surfaces.
-const APP_VERSION = '2.4.9';
+const APP_VERSION = '2.4.11';
 const storedVersion = localStorage.getItem('app_version');
 if (storedVersion !== APP_VERSION) {
   // Clear processed Excel data (structure may have changed) but keep user
   // preferences: language, theme, layout, users, sub-dashboards, settings.
-  ['dashboard_delivery', 'dashboard_qa'].forEach(k => localStorage.removeItem(k));
+  ['dashboard_delivery', 'dashboard_qa', 'seeded_delivery_subs'].forEach(k => localStorage.removeItem(k));
   localStorage.setItem('app_version', APP_VERSION);
 }
 
 // ── Seed default Delivery sub-dashboards ─────────────────────────────────────
-const DELIVERY_SUBS_SEED_KEY = 'seeded_delivery_subs_v1';
-if (!localStorage.getItem(DELIVERY_SUBS_SEED_KEY)) {
+// Re-runs on every version bump so new entries are always applied.
+if (localStorage.getItem('seeded_delivery_subs') !== APP_VERSION) {
   const DEFAULT_DELIVERY_SUBS = [
     { id: 900001, name_en: 'Commitment compliance metrics', name_he: 'מדדי עמידה בהתחייבות', parentId: 'delivery', icon: 'Target' },
     { id: 900002, name_en: 'Flow Velocity',                 name_he: 'קצב אספקת תכולות',       parentId: 'delivery', icon: 'TrendingUp' },
@@ -31,7 +31,7 @@ if (!localStorage.getItem(DELIVERY_SUBS_SEED_KEY)) {
     const seededIds = new Set(DEFAULT_DELIVERY_SUBS.map(d => d.id));
     const merged = existing.filter(d => !seededIds.has(d.id)).concat(DEFAULT_DELIVERY_SUBS);
     localStorage.setItem('sub_dashboards', JSON.stringify(merged));
-    localStorage.setItem(DELIVERY_SUBS_SEED_KEY, '1');
+    localStorage.setItem('seeded_delivery_subs', APP_VERSION);
   } catch { /* ignore quota errors */ }
 }
 
