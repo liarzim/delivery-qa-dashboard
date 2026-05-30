@@ -3,6 +3,7 @@ import KpiCard from './KpiCard';
 import TrafficLightWidget from './TrafficLightWidget';
 import GaugeChart from './GaugeChart';
 import CustomWidgetRenderer from './CustomWidgetRenderer';
+import CommitmentStatusPieWidget from './CommitmentStatusPieWidget';
 import { getTrafficLight, getLightHex } from '../utils/thresholds';
 
 export default function WidgetSlotContent({ widget, delivery, qa, settings }) {
@@ -22,6 +23,8 @@ export default function WidgetSlotContent({ widget, delivery, qa, settings }) {
   };
 
   switch (widget.id) {
+    case 'commitment-status-dist':
+      return <CommitmentStatusPieWidget />;
     case 'committed-rate':
       return (
         <KpiCard

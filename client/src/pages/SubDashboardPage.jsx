@@ -13,7 +13,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useWidgetBank } from '../context/WidgetBankContext';
 import { useRGLLayout } from '../hooks/useRGLLayout';
 import { AlertCircle, Layers } from 'lucide-react';
-import { ALL_WIDGETS, DEFAULT_SUB_RGL_LAYOUT } from '../constants/widgets';
+import { ALL_WIDGETS, DEFAULT_SUB_RGL_LAYOUT, SUB_DASHBOARD_LAYOUTS } from '../constants/widgets';
 
 export default function SubDashboardPage() {
   const { id }   = useParams();
@@ -35,7 +35,8 @@ export default function SubDashboardPage() {
   }, [id]);
 
   // Each sub-dashboard gets its own layout key in LayoutContext: "sub_1", "sub_2", etc.
-  const rglLayout = useRGLLayout(`sub_${id}`, DEFAULT_SUB_RGL_LAYOUT);
+  const defaultLayout = SUB_DASHBOARD_LAYOUTS[id] || DEFAULT_SUB_RGL_LAYOUT;
+  const rglLayout = useRGLLayout(`sub_${id}`, defaultLayout);
 
   const widgetMap = useMemo(() => {
     const map = {};
