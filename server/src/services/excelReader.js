@@ -268,4 +268,42 @@ function processQA(overrides = {}) {
   };
 }
 
-module.exports = { processDelivery, processQA };
+// ─── COMMITMENT STATUS DISTRIBUTION ──────────────────────────────────────────
+
+function processCommitmentStatusDist(overrides = {}) {
+  const s        = getSettings();
+  const filePath = overrides.deliveryPath || path.join(s.excel_path, s.delivery_file);
+  const rows     = readSheet(filePath, 'סיכום התחייבות', 'Commitment Summary');
+
+  // Normalise the status value of each row to one of three buckets
+  function bucket(row) {
+    const v = String(row['סטטוס'] || row['Status'] || row['State'] || '').trim();
+    if (v === 'בוצע' || v.toLowerCase() === 'done') return 'done';
+    if (v.includes('סיגמה') || v.toLowerCase().includes('sigma')) return 'notDoneSigma';
+    return 'notDoneCustomer';
+  }
+
+  function getStage(row) {
+    return String(
+      row['Delivery Stage'] || row['delivery_stage'] || row['Stage'] || 'Unknown'
+    ).trim();
+  }
+
+  const stages = [...new Set(rows.map(getStage))].filter(s => s && s !== 'Unknown').sort();
+
+  function tally(subset) {
+    return subset.reduce(
+      (acc, row) => { acc[bucket(row)]++; acc.total++; return acc; },
+      { done: 0, notDoneSigma: 0, notDoneCustomer: 0, total: 0 },
+    );
+  }
+
+  const byStage = {};
+  for (const stage of stages) {
+    byStage[stage] = tally(rows.filter(r => getStage(r) === stage));
+  }
+
+  return { stages, byStage, overall: tally(rows) };
+}
+
+module.exports = { processDelivery, processQA, processCommitmentStatusDist };

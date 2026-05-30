@@ -4,6 +4,7 @@
  */
 
 export const ALL_WIDGETS = [
+  { id: 'commitment-status-dist', label: 'Status Distribution', label_he: 'התפלגות סטטוסים', category: 'Delivery', category_he: 'משלוח' },
   { id: 'committed-rate',   label: 'Committed Rate',     label_he: 'אחוז מחויבות',       category: 'Delivery', category_he: 'משלוח' },
   { id: 'uncommitted-rate', label: 'Uncommitted Rate',   label_he: 'אחוז לא מחויב',      category: 'Delivery', category_he: 'משלוח' },
   { id: 'overall-rate',     label: 'Overall Rate',       label_he: 'אחוז כולל',           category: 'Delivery', category_he: 'משלוח' },
@@ -30,6 +31,14 @@ export const DEFAULT_SUB_RGL_LAYOUT = [
   { i: 'rejected-pct',    x: 4, y: 5, w: 4, h: 5, minW: 2, minH: 2 },
   { i: 'escaping-pct',    x: 8, y: 5, w: 4, h: 5, minW: 2, minH: 2 },
 ];
+
+// Per-sub-dashboard default layouts (keyed by sub-dashboard id as string).
+// Falls back to DEFAULT_SUB_RGL_LAYOUT for any id not listed here.
+export const SUB_DASHBOARD_LAYOUTS = {
+  '900001': [
+    { i: 'commitment-status-dist', x: 0, y: 0, w: 8, h: 12, minW: 4, minH: 6 },
+  ],
+};
 
 export const DEFAULT_OVERVIEW_RGL_LAYOUT = [
   { i: 'committed-rate',  x: 0, y: 0, w: 4, h: 5, minW: 2, minH: 2 },
