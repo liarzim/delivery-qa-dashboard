@@ -38,6 +38,18 @@ export default function SubDashboardPage() {
   const defaultLayout = SUB_DASHBOARD_LAYOUTS[id] || DEFAULT_SUB_RGL_LAYOUT;
   const rglLayout = useRGLLayout(`sub_${id}`, defaultLayout);
 
+  // Ensure any required default widgets are present even after a server-sync
+  // overwrites the layout cache. Runs once the layout settles.
+  useEffect(() => {
+    const required = SUB_DASHBOARD_LAYOUTS[id];
+    if (!required) return;
+    for (const item of required) {
+      if (!rglLayout.rglItems.some(it => it.i === item.i)) {
+        rglLayout.addWidget(item.i, { x: item.x, y: item.y, w: item.w, h: item.h });
+      }
+    }
+  }, [id, rglLayout.rglItems]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const widgetMap = useMemo(() => {
     const map = {};
     for (const w of ALL_WIDGETS) {
